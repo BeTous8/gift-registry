@@ -26,8 +26,8 @@ export default function DashboardPage() {
       }
       setUser(session.user);
 
-      // Fetch events for this user
-      fetchEvents(session.user.id);
+      // Fetch all events
+      fetchEvents();
     }
 
     getUserSession();
@@ -49,14 +49,13 @@ export default function DashboardPage() {
     // eslint-disable-next-line
   }, []);
 
-  async function fetchEvents(user_id) {
+  async function fetchEvents() {
     setLoading(true);
-    // Fetch events owned by this user, include their items
+    // Fetch all events, include their items
     const { data, error } = await supabase
       .from("events")
-      .select("id, title, slug, date, description, items(current_amount_cents)")
-      .eq("user_id", user_id)
-      .order("date", { ascending: false });
+      .select("id, title, slug, event_date, description, items(current_amount_cents)")
+      .order("event_date", { ascending: false });
 
     if (error) {
       setEvents([]);
@@ -131,7 +130,7 @@ export default function DashboardPage() {
                   No events found
                 </h2>
                 <p className="text-gray-500 mb-4">
-                  You haven't created any fundraising events yet.
+                  No events found.
                 </p>
                 <Link
                   href="/create-event"
@@ -152,8 +151,8 @@ export default function DashboardPage() {
                         {event.title}
                       </h3>
                       <p className="text-gray-500 text-sm mb-3">
-                        {event.date
-                          ? new Date(event.date).toLocaleDateString()
+                        {event.event_date
+                          ? new Date(event.event_date).toLocaleDateString()
                           : "No date"}
                       </p>
                       <p className="text-gray-600 mb-4">
