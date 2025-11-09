@@ -15,6 +15,9 @@ export default function EditEventPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showAddItem, setShowAddItem] = useState(false);
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   // Item form fields
   const [itemTitle, setItemTitle] = useState("");
@@ -107,12 +110,32 @@ export default function EditEventPage() {
 
   const handleShowAddItem = () => {
     setShowAddItem((val) => !val);
+    setEditingItemId(null);
     setItemError("");
     // Reset form when toggling
     setItemTitle("");
     setItemPrice("");
     setItemProductLink("");
     setItemImageUrl("");
+  };
+
+  const handleEditItem = (item) => {
+    setEditingItemId(item.id);
+    setShowAddItem(false);
+    setItemTitle(item.title);
+    setItemPrice((item.price_cents / 100).toFixed(2));
+    setItemProductLink(item.product_link || "");
+    setItemImageUrl(item.image_url || "");
+    setItemError("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItemId(null);
+    setItemTitle("");
+    setItemPrice("");
+    setItemProductLink("");
+    setItemImageUrl("");
+    setItemError("");
   };
 
   // Add item
@@ -169,7 +192,15 @@ export default function EditEventPage() {
     setItemLoading(false);
 
     if (insertError) {
-      setItemError(insertError.message || "Failed to add item.");
+      // Provide more helpful error message for RLS policy issues
+      if (insertError.message?.includes("row-level security policy")) {
+        setItemError(
+          "Permission denied. Please ensure you have the correct database policies set up. " +
+          "The items table needs an RLS policy that allows users to insert items for events they own."
+        );
+      } else {
+        setItemError(insertError.message || "Failed to add item.");
+      }
       return;
     }
 
@@ -178,24 +209,108 @@ export default function EditEventPage() {
     handleShowAddItem();
   };
 
-  // Delete item
-  const handleDeleteItem = async (id) => {
-    const confirmed = window.confirm("Are you sure you want to delete this item? This cannot be undone.");
-    if (!confirmed) return;
+  // Update item
+  const handleUpdateItem = async (e) => {
+    e.preventDefault();
+    setItemError("");
+    setItemLoading(true);
+
+    // Validation (same as add)
+    if (!itemTitle.trim()) {
+      setItemError("Title is required.");
+      setItemLoading(false);
+      return;
+    }
+    const priceNum = Number(itemPrice);
+    if (Number.isNaN(priceNum) || priceNum < 0.01) {
+      setItemError("Valid price is required.");
+      setItemLoading(false);
+      return;
+    }
+    if (itemProductLink && itemProductLink.length > 0) {
+      try {
+        new URL(itemProductLink);
+      } catch {
+        setItemError("Product link must be a valid URL.");
+        setItemLoading(false);
+        return;
+      }
+    }
+    if (itemImageUrl && itemImageUrl.length > 0) {
+      try {
+        new URL(itemImageUrl);
+      } catch {
+        setItemError("Image URL must be a valid URL.");
+        setItemLoading(false);
+        return;
+      }
+    }
+
+    // Update in db
+    const { data, error: updateError } = await supabase
+      .from("items")
+      .update({
+        title: itemTitle.trim(),
+        price_cents: Math.round(Number(itemPrice) * 100),
+        product_link: itemProductLink.trim() || null,
+        image_url: itemImageUrl.trim() || null,
+      })
+      .eq("id", editingItemId)
+      .select()
+      .single();
+
+    setItemLoading(false);
+
+    if (updateError) {
+      if (updateError.message?.includes("row-level security policy")) {
+        setItemError(
+          "Permission denied. Please ensure you have the correct database policies set up."
+        );
+      } else {
+        setItemError(updateError.message || "Failed to update item.");
+      }
+      return;
+    }
+
+    // Refresh items list
+    setItems((prev) =>
+      prev.map((item) => (item.id === editingItemId ? data : item))
+    );
+    handleCancelEdit();
+  };
+
+  // Open delete confirmation dialog
+  const handleDeleteClick = (item) => {
+    setItemToDelete(item);
+    setDeleteDialogOpen(true);
+  };
+
+  // Close delete dialog
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setItemToDelete(null);
+  };
+
+  // Confirm and delete item
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+    
     setLoading(true);
     const { error: deleteError } = await supabase
       .from("items")
       .delete()
-      .eq("id", id);
+      .eq("id", itemToDelete.id);
 
     if (deleteError) {
       setError("Failed to delete item.");
       setLoading(false);
+      handleCloseDeleteDialog();
       return;
     }
 
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    setItems((prev) => prev.filter((item) => item.id !== itemToDelete.id));
     setLoading(false);
+    handleCloseDeleteDialog();
   };
 
   // Render
@@ -240,16 +355,20 @@ export default function EditEventPage() {
 
             {/* Add item form toggle */}
             <div className="mb-6">
-              {!showAddItem ? (
+              {!showAddItem && !editingItemId && (
                 <button
                   className="flex items-center px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition"
                   onClick={handleShowAddItem}
                 >
                   + Add Item
                 </button>
-              ) : (
+              )}
+              {(showAddItem || editingItemId) && (
                 <div className="bg-gray-50 rounded-md p-4 border border-gray-200 mt-2">
-                  <form onSubmit={handleAddItem} className="space-y-4">
+                  <h4 className="font-semibold mb-3 text-gray-800">
+                    {editingItemId ? "Edit Item" : "Add New Item"}
+                  </h4>
+                  <form onSubmit={editingItemId ? handleUpdateItem : handleAddItem} className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium mb-1" htmlFor="item-title">
                         Item Title <span className="text-red-500">*</span>
@@ -321,12 +440,18 @@ export default function EditEventPage() {
                         className="bg-blue-600 text-white px-4 py-2 rounded font-semibold hover:bg-blue-700 transition disabled:opacity-50"
                         disabled={itemLoading}
                       >
-                        {itemLoading ? "Adding..." : "Add Item"}
+                        {itemLoading
+                          ? editingItemId
+                            ? "Updating..."
+                            : "Adding..."
+                          : editingItemId
+                          ? "Update Item"
+                          : "Add Item"}
                       </button>
                       <button
                         type="button"
                         className="bg-gray-300 text-gray-700 px-4 py-2 rounded font-semibold hover:bg-gray-400 transition"
-                        onClick={handleShowAddItem}
+                        onClick={editingItemId ? handleCancelEdit : handleShowAddItem}
                         disabled={itemLoading}
                       >
                         Cancel
@@ -349,12 +474,12 @@ export default function EditEventPage() {
                   {items.map((item) => (
                     <div key={item.id} className="rounded-lg shadow border bg-white flex flex-col md:flex-row gap-3 p-4">
                       {item.image_url && (
-                        <div className="flex-shrink-0">
+                        <div className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-md border flex items-center justify-center overflow-hidden">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={item.image_url}
                             alt={item.title}
-                            className="w-20 h-20 object-cover rounded-md border bg-gray-100"
+                            className="max-h-full max-w-full object-contain"
                           />
                         </div>
                       )}
@@ -401,12 +526,19 @@ export default function EditEventPage() {
                           </div>
                         </div>
                       </div>
-                      {/* Delete button */}
-                      <div className="flex flex-col items-end justify-between ml-2">
+                      {/* Edit and Delete buttons */}
+                      <div className="flex flex-col items-end justify-between ml-2 gap-2">
                         <button
-                          onClick={() => handleDeleteItem(item.id)}
-                          className="bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1 rounded font-semibold text-sm mt-1"
-                          disabled={loading}
+                          onClick={() => handleEditItem(item)}
+                          className="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1 rounded font-semibold text-sm"
+                          disabled={loading || editingItemId === item.id || showAddItem}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(item)}
+                          className="bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1 rounded font-semibold text-sm"
+                          disabled={loading || editingItemId === item.id || showAddItem}
                         >
                           Delete
                         </button>
@@ -419,6 +551,41 @@ export default function EditEventPage() {
           </>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {deleteDialogOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={handleCloseDeleteDialog}
+        >
+          <div 
+            className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Delete Item</h3>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to delete <span className="font-semibold">"{itemToDelete?.title}"</span>? 
+              This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleCloseDeleteDialog}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded font-semibold hover:bg-gray-300 transition"
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded font-semibold hover:bg-red-700 transition disabled:opacity-50"
+                disabled={loading}
+              >
+                {loading ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
