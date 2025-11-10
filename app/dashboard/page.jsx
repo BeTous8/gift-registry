@@ -27,7 +27,7 @@ export default function DashboardPage() {
       setUser(session.user);
 
       // Fetch all events
-      fetchEvents();
+      fetchEvents(session.user.id);
     }
 
     getUserSession();
@@ -49,12 +49,13 @@ export default function DashboardPage() {
     // eslint-disable-next-line
   }, []);
 
-  async function fetchEvents() {
+  async function fetchEvents(userId) {
     setLoading(true);
-    // Fetch all events, include their items
+    // Fetch only the user's events
     const { data, error } = await supabase
       .from("events")
       .select("id, title, slug, event_date, description, items(current_amount_cents)")
+      .eq("user_id", userId)
       .order("event_date", { ascending: false });
 
     if (error) {
