@@ -11,7 +11,7 @@ export default function LandingPage() {
           </div>
           <Link
             href="/login"
-            className="text-blue-600 hover:text-blue-700 font-semibold px-4 py-2 rounded-lg hover:bg-blue-50 transition"
+            className="text-blue-700 hover:text-blue-800 font-bold px-4 py-2 rounded-lg hover:bg-blue-50 transition"
           >
             Sign In
           </Link>
@@ -36,11 +36,11 @@ export default function LandingPage() {
           </p>
           <Link
             href="/login"
-            className="inline-block bg-white text-blue-600 px-8 py-4 rounded-full text-lg font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+            className="inline-block bg-white text-blue-700 px-8 py-4 rounded-full text-lg font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
           >
             Get Started Free ✨
           </Link>
-          <p className="text-white/80 mt-4 text-sm">No credit card required</p>
+          <p className="text-white/95 mt-4 text-sm font-medium">No credit card required</p>
         </div>
 
         {/* Wave separator */}
@@ -54,17 +54,17 @@ export default function LandingPage() {
       {/* How It Works */}
       <section className="py-20 px-4 bg-white">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-gray-800">
+          <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-gray-900">
             How It Works
           </h2>
-          <p className="text-center text-gray-600 text-lg mb-16">Three simple steps to better gifting</p>
+          <p className="text-center text-gray-700 text-lg mb-16 font-medium">Three simple steps to better gifting</p>
           
           <div className="grid md:grid-cols-3 gap-8">
             {/* Step 1 */}
             <div className="text-center p-8 rounded-2xl bg-gradient-to-br from-blue-50 to-pink-50 hover:shadow-lg transition-all">
               <div className="text-6xl mb-4">📝</div>
-              <h3 className="text-2xl font-bold mb-3 text-blue-600">Create Your Event</h3>
-              <p className="text-gray-700">
+              <h3 className="text-2xl font-bold mb-3 text-blue-700">Create Your Event</h3>
+              <p className="text-gray-800 font-medium">
                 Add items you actually want - from Amazon, anywhere, or let AI suggest gifts for you
               </p>
             </div>
@@ -72,8 +72,8 @@ export default function LandingPage() {
             {/* Step 2 */}
             <div className="text-center p-8 rounded-2xl bg-gradient-to-br from-yellow-50 to-blue-50 hover:shadow-lg transition-all">
               <div className="text-6xl mb-4">🔗</div>
-              <h3 className="text-2xl font-bold mb-3 text-yellow-600">Share Your Link</h3>
-              <p className="text-gray-700">
+              <h3 className="text-2xl font-bold mb-3 text-yellow-700">Share Your Link</h3>
+              <p className="text-gray-800 font-medium">
                 Send your unique link to friends, family, or post on social media
               </p>
             </div>
@@ -81,8 +81,8 @@ export default function LandingPage() {
             {/* Step 3 */}
             <div className="text-center p-8 rounded-2xl bg-gradient-to-br from-pink-50 to-yellow-50 hover:shadow-lg transition-all">
               <div className="text-6xl mb-4">🎉</div>
-              <h3 className="text-2xl font-bold mb-3 text-pink-500">Celebrate!</h3>
-              <p className="text-gray-700">
+              <h3 className="text-2xl font-bold mb-3 text-pink-600">Celebrate!</h3>
+              <p className="text-gray-800 font-medium">
                 Friends contribute together. You get the money to buy exactly what you want
               </p>
             </div>
@@ -93,39 +93,39 @@ export default function LandingPage() {
       {/* Features Highlight */}
       <section className="py-20 px-4 bg-gradient-to-br from-yellow-100 to-pink-100">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-bold text-center mb-16 text-gray-800">
+          <h2 className="text-4xl md:text-5xl font-bold text-center mb-16 text-gray-900">
             Why Memora?
           </h2>
           
           <div className="grid md:grid-cols-2 gap-8">
             <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition">
               <div className="text-4xl mb-4">✅</div>
-              <h3 className="text-xl font-bold mb-2 text-blue-600">No More Unwanted Gifts</h3>
-              <p className="text-gray-700">
+              <h3 className="text-xl font-bold mb-2 text-blue-700">No More Unwanted Gifts</h3>
+              <p className="text-gray-800 font-medium">
                 Choose exactly what you want. No more duplicate presents or things you'll never use.
               </p>
             </div>
 
             <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition">
               <div className="text-4xl mb-4">👥</div>
-              <h3 className="text-xl font-bold mb-2 text-yellow-600">Friends Contribute Together</h3>
-              <p className="text-gray-700">
+              <h3 className="text-xl font-bold mb-2 text-yellow-700">Friends Contribute Together</h3>
+              <p className="text-gray-800 font-medium">
                 Big gift? Everyone can chip in! Track progress and see the support roll in.
               </p>
             </div>
 
             <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition">
               <div className="text-4xl mb-4">💝</div>
-              <h3 className="text-xl font-bold mb-2 text-pink-500">Keep All Contributions</h3>
-              <p className="text-gray-700">
+              <h3 className="text-xl font-bold mb-2 text-pink-600">Keep All Contributions</h3>
+              <p className="text-gray-800 font-medium">
                 Even if items aren't fully funded, you keep the money. Total flexibility.
               </p>
             </div>
 
             <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition">
               <div className="text-4xl mb-4">🤖</div>
-              <h3 className="text-xl font-bold mb-2 text-blue-600">AI Gift Suggestions</h3>
-              <p className="text-gray-700">
+              <h3 className="text-xl font-bold mb-2 text-blue-700">AI Gift Suggestions</h3>
+              <p className="text-gray-800 font-medium">
                 Not sure what to add? Our AI suggests perfect gifts based on your interests.
               </p>
             </div>
@@ -144,7 +144,7 @@ export default function LandingPage() {
           </p>
           <Link
             href="/login"
-            className="inline-block bg-white text-blue-600 px-8 py-4 rounded-full text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-200"
+            className="inline-block bg-white text-blue-700 px-8 py-4 rounded-full text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-200"
           >
             Start Your Wishlist Now 🎁
           </Link>
@@ -153,12 +153,12 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="bg-gray-50 py-8 px-4">
-        <div className="max-w-6xl mx-auto text-center text-gray-600">
-          <p className="mb-2">© 2025 Memora. Making celebrations better, one gift at a time.</p>
-          <div className="flex justify-center gap-6 text-sm">
-            <a href="#" className="hover:text-blue-600">Privacy</a>
-            <a href="#" className="hover:text-blue-600">Terms</a>
-            <a href="#" className="hover:text-blue-600">Contact</a>
+        <div className="max-w-6xl mx-auto text-center text-gray-700">
+          <p className="mb-2 font-medium">© 2025 Memora. Making celebrations better, one gift at a time.</p>
+          <div className="flex justify-center gap-6 text-sm font-medium">
+            <a href="#" className="hover:text-blue-700 text-gray-800">Privacy</a>
+            <a href="#" className="hover:text-blue-700 text-gray-800">Terms</a>
+            <a href="#" className="hover:text-blue-700 text-gray-800">Contact</a>
           </div>
         </div>
       </footer>

@@ -14,18 +14,16 @@ export default function ViewEventPage() {
   const [copied, setCopied] = useState(false);
   const [user, setUser] = useState(null);
   const [isOwner, setIsOwner] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   useEffect(() => {
     let ignore = false;
-    async function fetchData() {
-      setLoading(true);
-      setNotFound(false);
 
-      // Check if user is logged in
+    async function fetchData() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      
+      if (ignore) return;
       if (session?.user) {
         setUser(session.user);
       } else {
@@ -33,7 +31,6 @@ export default function ViewEventPage() {
         setIsOwner(false);
       }
 
-      // Fetch event data
       const { data: eventData, error: eventError } = await supabase
         .from("events")
         .select(
@@ -41,8 +38,6 @@ export default function ViewEventPage() {
         )
         .eq("slug", slug)
         .single();
-
-      if (ignore) return;
 
       if (eventError || !eventData) {
         setNotFound(true);
@@ -52,24 +47,22 @@ export default function ViewEventPage() {
 
       setEvent(eventData);
       setItems(eventData.items || []);
-      
-      // Check if current user owns this event (only if logged in)
+
       if (session?.user && eventData.user_id === session.user.id) {
         setIsOwner(true);
       } else {
         setIsOwner(false);
       }
-      
+
       setLoading(false);
     }
+
     fetchData();
 
-    // Listen for auth changes (login/logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (authEvent, session) => {
       if (ignore) return;
       if (session?.user) {
         setUser(session.user);
-        // Re-check ownership when auth state changes
         const { data: eventData } = await supabase
           .from("events")
           .select("user_id")
@@ -92,7 +85,6 @@ export default function ViewEventPage() {
     };
   }, [slug]);
 
-  // Calculate totals
   let totalGoal = 0;
   let totalRaised = 0;
   if (items.length > 0) {
@@ -113,7 +105,6 @@ export default function ViewEventPage() {
         (item.current_amount_cents || 0) >= (item.price_cents || 0)
     );
 
-  // Date formatter
   function formatDate(dateStr) {
     if (!dateStr) return null;
     const date = new Date(dateStr);
@@ -124,7 +115,6 @@ export default function ViewEventPage() {
     });
   }
 
-  // Copy event URL to clipboard
   const handleShare = async () => {
     const eventUrl = `${window.location.origin}/event/${slug}`;
     try {
@@ -139,7 +129,6 @@ export default function ViewEventPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-blue-200 to-blue-50 py-10">
       <div className="max-w-5xl mx-auto px-4">
-        {/* Navigation bar - only show if user is logged in */}
         {user && (
           <div className="mb-6 flex justify-between items-center">
             <Link
@@ -219,7 +208,6 @@ export default function ViewEventPage() {
                   </span>
                 )}
               </div>
-              {/* Overall progress bar */}
               {totalGoal > 0 && (
                 <div className="w-full max-w-lg mx-auto mt-6">
                   <div className="w-full bg-gray-200 rounded-full h-4">
@@ -243,7 +231,6 @@ export default function ViewEventPage() {
                 </div>
               )}
             </div>
-            {/* Item cards grid */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {items.length === 0 ? (
                 <div className="col-span-full text-center text-gray-500 italic">
@@ -280,7 +267,6 @@ export default function ViewEventPage() {
                           <div className="text-lg font-bold text-gray-700 mb-2">
                             ${ (price / 100).toFixed(2) }
                           </div>
-                          {/* Progress bar */}
                           <div className="w-full mb-2">
                             <div className="w-full bg-gray-200 rounded-full h-3">
                               <div
@@ -312,11 +298,15 @@ export default function ViewEventPage() {
                         </div>
                         <div className="flex items-center gap-2 mt-4">
                           <button
-                            className="flex-1 bg-blue-500 bg-opacity-50 text-white px-4 py-2 rounded-md font-semibold cursor-not-allowed opacity-70"
-                            disabled
-                            title="Not available yet"
+                            onClick={() => setSelectedItem(item)}
+                            disabled={itemFunded}
+                            className={`flex-1 px-4 py-2 rounded-md font-semibold transition ${
+                              itemFunded
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                            }`}
                           >
-                            Contribute
+                            {itemFunded ? 'Fully Funded' : 'Contribute'}
                           </button>
                           {item.product_link && (
                             <a
@@ -337,6 +327,171 @@ export default function ViewEventPage() {
             </div>
           </>
         )}
+      </div>
+
+      {selectedItem && (
+        <ContributeModal
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function ContributeModal({ item, onClose }) {
+  const [amount, setAmount] = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const remaining = (item.price_cents - item.current_amount_cents) / 100;
+  const suggestedAmounts = [25, 50, 100];
+
+  async function handleContribute() {
+    setError('');
+
+    if (!amount || parseFloat(amount) <= 0) {
+      setError('Please enter a valid amount');
+      return;
+    }
+
+    if (!name.trim()) {
+      setError('Please enter your name');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemId: item.id,
+          amount: Math.round(parseFloat(amount) * 100),
+          contributorName: name.trim(),
+          contributorEmail: email.trim()
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        setError(data.error);
+        setLoading(false);
+        return;
+      }
+
+      // Redirect to Stripe Checkout
+      window.location.href = data.url;
+    } catch (err) {
+      setError('Something went wrong. Please try again.');
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-start mb-4">
+          <h3 className="text-2xl font-bold text-gray-800">Contribute</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="mb-6">
+          <h4 className="font-semibold text-lg mb-2">{item.title}</h4>
+          <div className="text-sm text-gray-600 space-y-1">
+            <p>Price: <span className="font-semibold">${(item.price_cents / 100).toFixed(2)}</span></p>
+            <p>Already raised: <span className="font-semibold">${(item.current_amount_cents / 100).toFixed(2)}</span></p>
+            <p className="text-green-600 font-semibold">Remaining: ${remaining.toFixed(2)}</p>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2">Quick Select:</label>
+          <div className="grid grid-cols-4 gap-2">
+            {suggestedAmounts.map(amt => (
+              <button
+                key={amt}
+                onClick={() => setAmount(amt.toString())}
+                className="py-2 border-2 border-blue-200 rounded-lg hover:bg-blue-50 hover:border-blue-400 transition font-semibold"
+              >
+                ${amt}
+              </button>
+            ))}
+            <button
+              onClick={() => setAmount(remaining.toFixed(2))}
+              className="py-2 border-2 border-green-200 rounded-lg hover:bg-green-50 hover:border-green-400 transition font-semibold"
+            >
+              Full
+            </button>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2">Amount (USD) *</label>
+          <input
+            type="number"
+            step="0.01"
+            min="0.01"
+            className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+            placeholder="25.00"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2">Your Name *</label>
+          <input
+            type="text"
+            className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+            placeholder="John Doe"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-2">Email (optional)</label>
+          <input
+            type="email"
+            className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+            placeholder="john@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            onClick={handleContribute}
+            disabled={loading}
+            className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            {loading ? 'Processing...' : 'Continue to Payment'}
+          </button>
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   );
