@@ -154,8 +154,8 @@ export default function ViewEventPage() {
         ) : notFound ? (
           <div className="flex flex-col items-center justify-center py-32">
             <div className="bg-white rounded-lg shadow p-8">
-              <h1 className="text-2xl font-bold text-gray-700 mb-2">Event Not Found</h1>
-              <p className="text-gray-500 mb-2">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Event Not Found</h1>
+              <p className="text-gray-700 mb-2">
                 Sorry, we couldn't find this event.
               </p>
             </div>
@@ -188,11 +188,11 @@ export default function ViewEventPage() {
                   {formatDate(event.event_date)}
                 </div>
               )}
-              <div className="mx-auto max-w-2xl mb-4 text-gray-700 text-lg">
+              <div className="mx-auto max-w-2xl mb-4 text-gray-800 text-lg">
                 {event.description ? (
                   <div>{event.description}</div>
                 ) : (
-                  <span className="italic text-gray-400">No description.</span>
+                  <span className="italic text-gray-600">No description.</span>
                 )}
               </div>
               <div className="flex flex-col sm:flex-row sm:justify-center sm:items-center gap-2 mt-2">
@@ -224,7 +224,7 @@ export default function ViewEventPage() {
                       }}
                     ></div>
                   </div>
-                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <div className="flex justify-between text-xs text-gray-700 mt-1">
                     <span>$0</span>
                     <span>${(totalGoal / 100).toFixed(2)} Goal</span>
                   </div>
@@ -233,7 +233,7 @@ export default function ViewEventPage() {
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {items.length === 0 ? (
-                <div className="col-span-full text-center text-gray-500 italic">
+                <div className="col-span-full text-center text-gray-700 italic">
                   No items found for this event.
                 </div>
               ) : (
@@ -255,7 +255,7 @@ export default function ViewEventPage() {
                           />
                         </div>
                       ) : (
-                        <div className="h-44 flex items-center justify-center bg-gray-100 rounded-t-lg text-gray-400 text-5xl">
+                        <div className="h-44 flex items-center justify-center bg-gray-100 rounded-t-lg text-gray-500 text-5xl">
                           <span className="material-symbols-outlined">image</span>
                         </div>
                       )}
@@ -264,7 +264,7 @@ export default function ViewEventPage() {
                           <h2 className="text-xl font-semibold text-blue-800 mb-1">
                             {item.title}
                           </h2>
-                          <div className="text-lg font-bold text-gray-700 mb-2">
+                          <div className="text-lg font-bold text-gray-900 mb-2">
                             ${ (price / 100).toFixed(2) }
                           </div>
                           <div className="w-full mb-2">
@@ -282,7 +282,7 @@ export default function ViewEventPage() {
                                 }}
                               ></div>
                             </div>
-                            <div className="flex justify-between text-xs text-gray-500 mt-0.5">
+                            <div className="flex justify-between text-xs text-gray-700 mt-0.5">
                               <span>
                                 Raised: ${ (raised / 100).toFixed(2) }
                               </span>
@@ -302,7 +302,7 @@ export default function ViewEventPage() {
                             disabled={itemFunded}
                             className={`flex-1 px-4 py-2 rounded-md font-semibold transition ${
                               itemFunded
-                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                ? 'bg-gray-300 text-gray-700 cursor-not-allowed'
                                 : 'bg-blue-600 text-white hover:bg-blue-700'
                             }`}
                           >
@@ -396,39 +396,39 @@ function ContributeModal({ item, onClose }) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-start mb-4">
-          <h3 className="text-2xl font-bold text-gray-800">Contribute</h3>
+          <h3 className="text-2xl font-bold text-gray-900">Contribute</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+            className="text-gray-600 hover:text-gray-800 text-2xl leading-none"
           >
             ×
           </button>
         </div>
 
         <div className="mb-6">
-          <h4 className="font-semibold text-lg mb-2">{item.title}</h4>
-          <div className="text-sm text-gray-600 space-y-1">
-            <p>Price: <span className="font-semibold">${(item.price_cents / 100).toFixed(2)}</span></p>
-            <p>Already raised: <span className="font-semibold">${(item.current_amount_cents / 100).toFixed(2)}</span></p>
-            <p className="text-green-600 font-semibold">Remaining: ${remaining.toFixed(2)}</p>
+          <h4 className="font-semibold text-lg mb-2 text-gray-900">{item.title}</h4>
+          <div className="text-sm text-gray-700 space-y-1">
+            <p>Price: <span className="font-semibold text-gray-900">${(item.price_cents / 100).toFixed(2)}</span></p>
+            <p>Already raised: <span className="font-semibold text-gray-900">${(item.current_amount_cents / 100).toFixed(2)}</span></p>
+            <p className="text-green-700 font-semibold">Remaining: ${remaining.toFixed(2)}</p>
           </div>
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-2">Quick Select:</label>
+          <label className="block text-sm font-medium mb-2 text-gray-900">Quick Select:</label>
           <div className="grid grid-cols-4 gap-2">
             {suggestedAmounts.map(amt => (
               <button
                 key={amt}
                 onClick={() => setAmount(amt.toString())}
-                className="py-2 border-2 border-blue-200 rounded-lg hover:bg-blue-50 hover:border-blue-400 transition font-semibold"
+                className="py-2 border-2 border-blue-200 rounded-lg hover:bg-blue-50 hover:border-blue-400 transition font-semibold text-gray-900"
               >
                 ${amt}
               </button>
             ))}
             <button
               onClick={() => setAmount(remaining.toFixed(2))}
-              className="py-2 border-2 border-green-200 rounded-lg hover:bg-green-50 hover:border-green-400 transition font-semibold"
+              className="py-2 border-2 border-green-200 rounded-lg hover:bg-green-50 hover:border-green-400 transition font-semibold text-gray-900"
             >
               Full
             </button>
@@ -436,12 +436,12 @@ function ContributeModal({ item, onClose }) {
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-2">Amount (USD) *</label>
+          <label className="block text-sm font-medium mb-2 text-gray-900">Amount (USD) *</label>
           <input
             type="number"
             step="0.01"
             min="0.01"
-            className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+            className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 text-gray-900"
             placeholder="25.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
@@ -449,10 +449,10 @@ function ContributeModal({ item, onClose }) {
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-2">Your Name *</label>
+          <label className="block text-sm font-medium mb-2 text-gray-900">Your Name *</label>
           <input
             type="text"
-            className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+            className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 text-gray-900"
             placeholder="John Doe"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -460,10 +460,10 @@ function ContributeModal({ item, onClose }) {
         </div>
 
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">Email (optional)</label>
+          <label className="block text-sm font-medium mb-2 text-gray-900">Email (optional)</label>
           <input
             type="email"
-            className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+            className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 text-gray-900"
             placeholder="john@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
