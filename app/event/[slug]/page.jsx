@@ -3,10 +3,14 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import supabase from "../../lib/supabase";
+import { useToast } from "../../components/ToastProvider";
 
 export default function ViewEventPage() {
   const { slug } = useParams();
+  const router = useRouter();
+  const { showToast } = useToast();
   const [event, setEvent] = useState(null);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,6 +19,180 @@ export default function ViewEventPage() {
   const [user, setUser] = useState(null);
   const [isOwner, setIsOwner] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [successBanner, setSuccessBanner] = useState(null);
+  const [cancelBanner, setCancelBanner] = useState(false);
+  const [errorBanner, setErrorBanner] = useState(null);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
+  const [paymentVerified, setPaymentVerified] = useState(false);
+
+  // Fetch event data
+  const fetchEventData = async () => {
+    setLoading(true);
+    setNotFound(false);
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    
+    if (session?.user) {
+      setUser(session.user);
+    } else {
+      setUser(null);
+      setIsOwner(false);
+    }
+
+    const { data: eventData, error: eventError } = await supabase
+      .from("events")
+      .select(
+        "id, title, slug, description, event_date, user_id, items(id, title, price_cents, current_amount_cents, product_link, image_url)"
+      )
+      .eq("slug", slug)
+      .single();
+
+    if (eventError || !eventData) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+
+    setEvent(eventData);
+    setItems(eventData.items || []);
+
+    if (session?.user && eventData.user_id === session.user.id) {
+      setIsOwner(true);
+    } else {
+      setIsOwner(false);
+    }
+
+    setLoading(false);
+  };
+
+  // Verify payment session
+  const verifyPaymentSession = async (sessionId) => {
+    if (!sessionId) return null;
+
+    setVerifyingPayment(true);
+    try {
+      const response = await fetch('/api/verify-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+
+      const data = await response.json();
+      setVerifyingPayment(false);
+      return data;
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      setVerifyingPayment(false);
+      return { valid: false, error: 'Failed to verify payment' };
+    }
+  };
+
+  // Helper function to get user-friendly error message
+  const getErrorMessage = (errorType, defaultMessage) => {
+    const errorMessages = {
+      'card_declined': 'Your card was declined. Please contact your card issuer or try a different payment method.',
+      'insufficient_funds': 'Insufficient funds in your account. Please use a different payment method or contact your bank.',
+      'expired_card': 'Your card has expired. Please update your payment information and try again.',
+      'incorrect_cvc': 'The CVV code entered is incorrect. Please verify and try again.',
+      'incorrect_zip': 'The ZIP code entered is incorrect. Please verify and try again.',
+      'generic_decline': 'Your bank has rejected the transaction. Please contact your bank for more details or try a different payment method.',
+      'payment_failed': 'Payment failed. Please try again or contact support if the problem persists.'
+    };
+
+    return errorMessages[errorType] || defaultMessage || 'Payment failed. Please try again or contact support if the problem persists.';
+  };
+
+  // Handle payment success/cancel from URL
+  useEffect(() => {
+    if (typeof window === 'undefined' || !event || paymentVerified) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+    const canceled = urlParams.get('canceled');
+    const sessionId = urlParams.get('session_id');
+
+    // Handle canceled payment
+    if (canceled === 'true') {
+      setCancelBanner(true);
+      setPaymentVerified(true);
+      // Clean URL
+      router.replace(`/event/${slug}`, { scroll: false });
+      // Auto-dismiss after 8 seconds
+      setTimeout(() => setCancelBanner(false), 8000);
+      return;
+    }
+
+    // Handle successful payment (or failed payment that Stripe redirected to success URL)
+    if (success === 'true') {
+      setPaymentVerified(true);
+      if (sessionId) {
+        // Verify the payment session
+        verifyPaymentSession(sessionId).then((result) => {
+          if (!result) return;
+
+          if (!result.valid) {
+            // Invalid or expired session
+            showToast(
+              result.error || 'Invalid or expired payment session',
+              'error'
+            );
+            router.replace(`/event/${slug}`, { scroll: false });
+            return;
+          }
+
+          // Check if payment failed
+          if (result.failed) {
+            // Payment failed - show error banner
+            const errorMessage = getErrorMessage(result.errorType, result.errorMessage);
+            setErrorBanner({
+              message: errorMessage,
+              errorType: result.errorType
+            });
+            // Clean URL
+            router.replace(`/event/${slug}`, { scroll: false });
+            // Auto-dismiss after 10 seconds
+            setTimeout(() => setErrorBanner(null), 10000);
+            return;
+          }
+
+          if (result.completed) {
+            // Payment completed successfully
+            setSuccessBanner({
+              message: 'Thank you for your contribution! Your payment has been processed.',
+              amount: result.amount ? (result.amount / 100).toFixed(2) : null
+            });
+            // Refresh event data to show updated progress
+            fetchEventData();
+            // Clean URL
+            router.replace(`/event/${slug}`, { scroll: false });
+            // Auto-dismiss after 10 seconds
+            setTimeout(() => setSuccessBanner(null), 10000);
+          } else {
+            // Payment received but webhook not processed yet
+            showToast(
+              'Payment received! Your contribution is being processed and will appear shortly.',
+              'warning',
+              8000
+            );
+            // Refresh data after a delay
+            setTimeout(() => fetchEventData(), 3000);
+            router.replace(`/event/${slug}`, { scroll: false });
+          }
+        });
+      } else {
+        // Success parameter but no session ID - show generic success
+        setSuccessBanner({
+          message: 'Thank you for your contribution! Your payment has been processed.'
+        });
+        fetchEventData();
+        router.replace(`/event/${slug}`, { scroll: false });
+        setTimeout(() => setSuccessBanner(null), 10000);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, router, showToast, event, paymentVerified]);
 
   useEffect(() => {
     let ignore = false;
@@ -129,6 +307,73 @@ export default function ViewEventPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-blue-200 to-blue-50 py-10">
       <div className="max-w-5xl mx-auto px-4">
+        {/* Success Banner */}
+        {successBanner && (
+          <div className="mb-6 bg-green-100 border-2 border-green-500 text-green-800 px-6 py-4 rounded-lg flex items-center justify-between shadow-lg">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl font-bold">✓</span>
+              <div>
+                <p className="font-semibold text-lg">{successBanner.message}</p>
+                {successBanner.amount && (
+                  <p className="text-sm mt-1">Amount: ${successBanner.amount}</p>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setSuccessBanner(null)}
+              className="text-green-700 hover:text-green-900 font-bold text-xl ml-4 flex-shrink-0"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        {/* Cancel Banner */}
+        {cancelBanner && (
+          <div className="mb-6 bg-blue-100 border-2 border-blue-400 text-blue-800 px-6 py-4 rounded-lg flex items-center justify-between shadow-lg">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">ℹ</span>
+              <p className="font-semibold">Payment was canceled. You can try again anytime.</p>
+            </div>
+            <button
+              onClick={() => setCancelBanner(false)}
+              className="text-blue-700 hover:text-blue-900 font-bold text-xl ml-4 flex-shrink-0"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        {/* Error Banner */}
+        {errorBanner && (
+          <div className="mb-6 bg-red-100 border-2 border-red-500 text-red-800 px-6 py-4 rounded-lg flex items-center justify-between shadow-lg">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl font-bold">✕</span>
+              <div>
+                <p className="font-semibold text-lg">Payment Failed</p>
+                <p className="text-sm mt-1">{errorBanner.message}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setErrorBanner(null)}
+              className="text-red-700 hover:text-red-900 font-bold text-xl ml-4 flex-shrink-0"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        {/* Payment Verification Loading */}
+        {verifyingPayment && (
+          <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-800 px-6 py-3 rounded-lg flex items-center gap-3">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+            <p className="font-medium">Verifying your payment...</p>
+          </div>
+        )}
+
         {user && (
           <div className="mb-6 flex justify-between items-center">
             <Link
@@ -340,25 +585,23 @@ export default function ViewEventPage() {
 }
 
 function ContributeModal({ item, onClose }) {
+  const { showToast } = useToast();
   const [amount, setAmount] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const remaining = (item.price_cents - item.current_amount_cents) / 100;
   const suggestedAmounts = [25, 50, 100];
 
   async function handleContribute() {
-    setError('');
-
     if (!amount || parseFloat(amount) <= 0) {
-      setError('Please enter a valid amount');
+      showToast('Please enter a valid amount', 'error');
       return;
     }
 
     if (!name.trim()) {
-      setError('Please enter your name');
+      showToast('Please enter your name', 'error');
       return;
     }
 
@@ -379,7 +622,7 @@ function ContributeModal({ item, onClose }) {
       const data = await response.json();
 
       if (data.error) {
-        setError(data.error);
+        showToast(data.error || 'Failed to create payment session', 'error');
         setLoading(false);
         return;
       }
@@ -387,7 +630,8 @@ function ContributeModal({ item, onClose }) {
       // Redirect to Stripe Checkout
       window.location.href = data.url;
     } catch (err) {
-      setError('Something went wrong. Please try again.');
+      console.error('Payment error:', err);
+      showToast('Network error. Please check your connection and try again.', 'error');
       setLoading(false);
     }
   }
@@ -469,12 +713,6 @@ function ContributeModal({ item, onClose }) {
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            {error}
-          </div>
-        )}
 
         <div className="flex gap-3">
           <button

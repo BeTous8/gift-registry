@@ -87,5 +87,43 @@ export async function POST(request) {
     console.log('Successfully updated item amount:', newAmount);
   }
 
+  // Handle payment_intent.payment_failed event
+  if (event.type === 'payment_intent.payment_failed') {
+    const paymentIntent = event.data.object;
+    const error = paymentIntent.last_payment_error;
+    const declineCode = error?.decline_code || error?.code || 'unknown';
+    const errorMessage = error?.message || 'Payment failed';
+    
+    // Try to get checkout session ID from metadata or retrieve it
+    let sessionId = paymentIntent.metadata?.checkout_session_id;
+    let itemId = null;
+    
+    // If we have a session ID, try to get the item ID from the session
+    if (sessionId) {
+      try {
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        itemId = session.metadata?.itemId;
+      } catch (err) {
+        console.error('Error retrieving checkout session:', err.message);
+      }
+    }
+    
+    // Log the failed payment with details
+    console.log('Payment failed:', {
+      paymentIntentId: paymentIntent.id,
+      itemId: itemId,
+      amount: paymentIntent.amount,
+      currency: paymentIntent.currency,
+      declineCode: declineCode,
+      errorMessage: errorMessage,
+      errorType: error?.type,
+      customerId: paymentIntent.customer
+    });
+    
+    // Optional: Store failed payment in database for analytics
+    // This would require a failed_payments or payment_attempts table
+    // For now, we'll just log it
+  }
+
   return NextResponse.json({ received: true });
 }
