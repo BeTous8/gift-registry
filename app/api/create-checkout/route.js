@@ -19,6 +19,8 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Item not found' }, { status: 404 });
     }
 
+    const origin = process.env.NEXT_PUBLIC_SITE_URL || request.headers.get('origin');
+    
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -36,8 +38,8 @@ export async function POST(request) {
         },
       ],
       mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL || request.headers.get('origin')}/event/${item.events.slug}?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL || request.headers.get('origin')}/event/${item.events.slug}?canceled=true`,
+      success_url: `${origin}/event/${item.events.slug}?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/event/${item.events.slug}?canceled=true`,
       metadata: {
         itemId: String(itemId), // Stripe metadata requires strings
         contributorName: contributorName || '',
