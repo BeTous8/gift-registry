@@ -20,6 +20,18 @@ export default function DashboardPage() {
 
     async function getUserSession() {
       try {
+        // Check if this is a redirect from OAuth (mobile compatibility)
+        const urlParams = new URLSearchParams(window.location.search);
+        const authSuccess = urlParams.get('auth');
+        
+        // If auth success param exists, wait a bit for cookies to be set (mobile fix)
+        if (authSuccess === 'success') {
+          // Clean URL
+          window.history.replaceState({}, '', '/dashboard');
+          // Small delay to ensure cookies are processed on mobile
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
         // Get the current session first
         const {
           data: { session },

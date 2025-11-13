@@ -40,10 +40,23 @@ export default function LoginPage() {
     setError("");
     
     try {
+      // Detect if we're on mobile
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider,
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
+          skipBrowserRedirect: false,
+          // For mobile, ensure proper redirect handling
+          ...(isMobile && {
+            queryParams: {
+              // Force account selection to avoid passkey issues
+              prompt: 'select_account',
+              // Disable passkey/autofill on mobile
+              access_type: 'offline',
+            }
+          })
         }
       });
       
@@ -51,8 +64,13 @@ export default function LoginPage() {
         setError(error.message);
         setOauthLoading(null);
       } else if (data?.url) {
-        // Redirect to OAuth provider
-        window.location.href = data.url;
+        // For mobile, use replace to avoid back button issues
+        // For desktop, use href for better UX
+        if (isMobile) {
+          window.location.replace(data.url);
+        } else {
+          window.location.href = data.url;
+        }
         // Don't set loading to false as we're redirecting
       } else {
         setOauthLoading(null);

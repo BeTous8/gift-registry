@@ -20,6 +20,7 @@ export async function GET(request) {
   if (code) {
     try {
       // Create Supabase client with cookie handling for server-side
+      // Use proper cookie options for mobile compatibility
       const cookieStore = await cookies();
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -31,32 +32,57 @@ export async function GET(request) {
             },
             set(name, value, options) {
               try {
-                cookieStore.set({ name, value, ...options });
+                // Set secure cookies with SameSite=None for cross-site requests (mobile)
+                cookieStore.set({ 
+                  name, 
+                  value, 
+                  ...options,
+                  sameSite: 'lax',
+                  secure: process.env.NODE_ENV === 'production',
+                  httpOnly: false, // Allow client-side access for mobile
+                });
               } catch (error) {
-                // Handle cookie setting errors
+                console.error('Error setting cookie:', error);
               }
             },
             remove(name, options) {
               try {
-                cookieStore.set({ name, value: '', ...options });
+                cookieStore.set({ 
+                  name, 
+                  value: '', 
+                  ...options,
+                  sameSite: 'lax',
+                  secure: process.env.NODE_ENV === 'production',
+                  httpOnly: false,
+                });
               } catch (error) {
-                // Handle cookie removal errors
+                console.error('Error removing cookie:', error);
               }
             },
           },
         }
       );
 
-      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+      const { data: sessionData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
-      if (!exchangeError) {
-        // Success - redirect to dashboard
-        return NextResponse.redirect(new URL(next, request.url));
+      if (!exchangeError && sessionData?.session) {
+        // Success - redirect to dashboard with a small delay to ensure cookies are set
+        // This helps with mobile browsers that need time to process cookies
+        const redirectUrl = new URL(next, request.url);
+        redirectUrl.searchParams.set('auth', 'success'); // Add success param for client-side detection
+        
+        const response = NextResponse.redirect(redirectUrl);
+        
+        // Set additional headers for mobile compatibility
+        response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+        response.headers.set('Pragma', 'no-cache');
+        
+        return response;
       } else {
         // Error exchanging code
         console.error('Error exchanging code:', exchangeError);
         return NextResponse.redirect(
-          new URL(`/login?error=${encodeURIComponent(exchangeError.message)}`, request.url)
+          new URL(`/login?error=${encodeURIComponent(exchangeError?.message || 'Authentication failed')}`, request.url)
         );
       }
     } catch (err) {
