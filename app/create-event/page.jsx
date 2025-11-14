@@ -99,7 +99,7 @@ export default function CreateEventPage() {
     }
 
     // Success - redirect to dashboard
-    router.push(`/event/${slug}/edit`);
+    router.push(`/dashboard`);
   };
 
   return (

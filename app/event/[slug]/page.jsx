@@ -24,6 +24,20 @@ export default function ViewEventPage() {
   const [errorBanner, setErrorBanner] = useState(null);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [paymentVerified, setPaymentVerified] = useState(false);
+  
+  // Edit mode states
+  const [showAddItem, setShowAddItem] = useState(false);
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  
+  // Item form fields
+  const [itemTitle, setItemTitle] = useState("");
+  const [itemPrice, setItemPrice] = useState("");
+  const [itemProductLink, setItemProductLink] = useState("");
+  const [itemImageUrl, setItemImageUrl] = useState("");
+  const [itemLoading, setItemLoading] = useState(false);
+  const [itemError, setItemError] = useState("");
 
   // Fetch event data
   const fetchEventData = async () => {
@@ -106,12 +120,15 @@ export default function ViewEventPage() {
 
   // Handle payment success/cancel from URL
   useEffect(() => {
-    if (typeof window === 'undefined' || !event || paymentVerified) return;
+    if (typeof window === 'undefined' || paymentVerified) return;
 
     const urlParams = new URLSearchParams(window.location.search);
     const success = urlParams.get('success');
     const canceled = urlParams.get('canceled');
     const sessionId = urlParams.get('session_id');
+
+    // Only process payment verification if URL params are present
+    if (!success && !canceled) return;
 
     // Handle canceled payment
     if (canceled === 'true') {
@@ -192,7 +209,7 @@ export default function ViewEventPage() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug, router, showToast, event, paymentVerified]);
+  }, [slug, router, showToast, paymentVerified]);
 
   useEffect(() => {
     let ignore = false;
@@ -237,21 +254,10 @@ export default function ViewEventPage() {
 
     fetchData();
 
+    // Listen for sign-out in other tabs (exact same as edit page - minimal, no state updates except on signout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (authEvent, session) => {
       if (ignore) return;
-      if (session?.user) {
-        setUser(session.user);
-        const { data: eventData } = await supabase
-          .from("events")
-          .select("user_id")
-          .eq("slug", slug)
-          .single();
-        if (eventData && eventData.user_id === session.user.id) {
-          setIsOwner(true);
-        } else {
-          setIsOwner(false);
-        }
-      } else {
+      if (authEvent === "SIGNED_OUT") {
         setUser(null);
         setIsOwner(false);
       }
@@ -302,6 +308,224 @@ export default function ViewEventPage() {
     } catch (err) {
       console.error("Failed to copy:", err);
     }
+  };
+
+  // Edit mode handlers
+  const handleShowAddItem = () => {
+    setShowAddItem((val) => !val);
+    setEditingItemId(null);
+    setItemError("");
+    setItemLoading(false); // Reset loading state
+    // Reset form when toggling
+    setItemTitle("");
+    setItemPrice("");
+    setItemProductLink("");
+    setItemImageUrl("");
+  };
+
+  const handleEditItem = (item) => {
+    setEditingItemId(item.id);
+    setShowAddItem(false);
+    setItemTitle(item.title);
+    setItemPrice((item.price_cents / 100).toFixed(2));
+    setItemProductLink(item.product_link || "");
+    setItemImageUrl(item.image_url || "");
+    setItemError("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItemId(null);
+    setItemTitle("");
+    setItemPrice("");
+    setItemProductLink("");
+    setItemImageUrl("");
+    setItemError("");
+  };
+
+  // Add item
+  const handleAddItem = async (e) => {
+    e.preventDefault();
+    setItemError("");
+    setItemLoading(true);
+
+    // Validation
+    if (!itemTitle.trim()) {
+      setItemError("Title is required.");
+      setItemLoading(false);
+      return;
+    }
+    const priceNum = Number(itemPrice);
+    if (Number.isNaN(priceNum) || priceNum < 0.01) {
+      setItemError("Valid price is required.");
+      setItemLoading(false);
+      return;
+    }
+    if (itemProductLink && itemProductLink.length > 0) {
+      try {
+        new URL(itemProductLink);
+      } catch {
+        setItemError("Product link must be a valid URL.");
+        setItemLoading(false);
+        return;
+      }
+    }
+    if (itemImageUrl && itemImageUrl.length > 0) {
+      try {
+        new URL(itemImageUrl);
+      } catch {
+        setItemError("Image URL must be a valid URL.");
+        setItemLoading(false);
+        return;
+      }
+    }
+
+    // Insert into db
+    const { data, error: insertError } = await supabase
+      .from("items")
+      .insert({
+        event_id: event.id,
+        title: itemTitle.trim(),
+        price_cents: Math.round(Number(itemPrice) * 100), // USD to cents
+        product_link: itemProductLink.trim() || null,
+        image_url: itemImageUrl.trim() || null,
+        current_amount_cents: 0,
+      })
+      .select()
+      .single();
+
+    setItemLoading(false);
+
+    if (insertError) {
+      // Provide more helpful error message for RLS policy issues
+      if (insertError.message?.includes("row-level security policy")) {
+        setItemError(
+          "Permission denied. Please ensure you have the correct database policies set up. " +
+          "The items table needs an RLS policy that allows users to insert items for events they own."
+        );
+      } else {
+        setItemError(insertError.message || "Failed to add item.");
+      }
+      return;
+    }
+
+    // Refresh items list
+    setItems((prev) => [...prev, data]);
+    // Reset form fields
+    setItemTitle("");
+    setItemPrice("");
+    setItemProductLink("");
+    setItemImageUrl("");
+    setItemError("");
+    // Close form
+    setShowAddItem(false);
+  };
+
+  // Update item
+  const handleUpdateItem = async (e) => {
+    e.preventDefault();
+    setItemError("");
+    setItemLoading(true);
+
+    try {
+      // Validation (same as add)
+      if (!itemTitle.trim()) {
+        setItemError("Title is required.");
+        setItemLoading(false);
+        return;
+      }
+      const priceNum = Number(itemPrice);
+      if (Number.isNaN(priceNum) || priceNum < 0.01) {
+        setItemError("Valid price is required.");
+        setItemLoading(false);
+        return;
+      }
+      if (itemProductLink && itemProductLink.length > 0) {
+        try {
+          new URL(itemProductLink);
+        } catch {
+          setItemError("Product link must be a valid URL.");
+          setItemLoading(false);
+          return;
+        }
+      }
+      if (itemImageUrl && itemImageUrl.length > 0) {
+        try {
+          new URL(itemImageUrl);
+        } catch {
+          setItemError("Image URL must be a valid URL.");
+          setItemLoading(false);
+          return;
+        }
+      }
+
+      // Update in db
+      const { data, error: updateError } = await supabase
+        .from("items")
+        .update({
+          title: itemTitle.trim(),
+          price_cents: Math.round(Number(itemPrice) * 100),
+          product_link: itemProductLink.trim() || null,
+          image_url: itemImageUrl.trim() || null,
+        })
+        .eq("id", editingItemId)
+        .select()
+        .single();
+
+      if (updateError) {
+        if (updateError.message?.includes("row-level security policy")) {
+          setItemError(
+            "Permission denied. Please ensure you have the correct database policies set up."
+          );
+        } else {
+          setItemError(updateError.message || "Failed to update item.");
+        }
+        setItemLoading(false);
+        return;
+      }
+
+      // Refresh items list
+      setItems((prev) =>
+        prev.map((item) => (item.id === editingItemId ? data : item))
+      );
+      handleCancelEdit();
+      setItemLoading(false);
+    } catch (error) {
+      console.error("Error updating item:", error);
+      setItemError(error.message || "An unexpected error occurred. Please try again.");
+      setItemLoading(false);
+    }
+  };
+
+  // Delete item handlers
+  const handleDeleteClick = (item) => {
+    setItemToDelete(item);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setItemToDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+    
+    setItemLoading(true);
+    const { error: deleteError } = await supabase
+      .from("items")
+      .delete()
+      .eq("id", itemToDelete.id);
+
+    if (deleteError) {
+      setItemError("Failed to delete item.");
+      setItemLoading(false);
+      handleCloseDeleteDialog();
+      return;
+    }
+
+    setItems((prev) => prev.filter((item) => item.id !== itemToDelete.id));
+    setItemLoading(false);
+    handleCloseDeleteDialog();
   };
 
   return (
@@ -382,14 +606,6 @@ export default function ViewEventPage() {
             >
               ← Dashboard
             </Link>
-            {isOwner && (
-              <Link
-                href={`/event/${slug}/edit`}
-                className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-blue-700 transition"
-              >
-                Edit Event
-              </Link>
-            )}
           </div>
         )}
         {loading ? (
@@ -476,10 +692,127 @@ export default function ViewEventPage() {
                 </div>
               )}
             </div>
+
+            {/* Add Item Form - shown for owners */}
+            {isOwner && (
+              <div className="mb-8 bg-white rounded-lg shadow-md p-6 border-2 border-blue-200">
+                {!showAddItem && !editingItemId && (
+                  <button
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition"
+                    onClick={handleShowAddItem}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Item
+                  </button>
+                )}
+                {(showAddItem || editingItemId) && (
+                  <div className="bg-gray-50 rounded-md p-4 border border-gray-200">
+                    <h4 className="font-semibold mb-3 text-gray-800">
+                      {editingItemId ? "Edit Item" : "Add New Item"}
+                    </h4>
+                    <form onSubmit={editingItemId ? handleUpdateItem : handleAddItem} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1" htmlFor="item-title">
+                          Item Title <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          id="item-title"
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200"
+                          value={itemTitle}
+                          onChange={(e) => setItemTitle(e.target.value)}
+                          required
+                          disabled={itemLoading}
+                          placeholder="Title of the item"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1" htmlFor="item-price">
+                          Price (USD) <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          id="item-price"
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200"
+                          value={itemPrice}
+                          onChange={(e) => setItemPrice(e.target.value)}
+                          required
+                          disabled={itemLoading}
+                          placeholder="e.g. 50.00"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1" htmlFor="item-link">
+                          Product Link
+                        </label>
+                        <input
+                          id="item-link"
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200"
+                          value={itemProductLink}
+                          onChange={(e) => setItemProductLink(e.target.value)}
+                          disabled={itemLoading}
+                          placeholder="https://example.com"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1" htmlFor="item-img">
+                          Image URL
+                        </label>
+                        <input
+                          id="item-img"
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200"
+                          value={itemImageUrl}
+                          onChange={(e) => setItemImageUrl(e.target.value)}
+                          disabled={itemLoading}
+                          placeholder="https://example.com/image.jpg"
+                        />
+                      </div>
+                      {itemError && (
+                        <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
+                          {itemError}
+                        </div>
+                      )}
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          type="submit"
+                          className="bg-blue-600 text-white px-4 py-2 rounded font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+                          disabled={itemLoading}
+                        >
+                          {itemLoading
+                            ? editingItemId
+                              ? "Updating..."
+                              : "Adding..."
+                            : editingItemId
+                            ? "Update Item"
+                            : "Add Item"}
+                        </button>
+                        <button
+                          type="button"
+                          className="bg-gray-300 text-gray-700 px-4 py-2 rounded font-semibold hover:bg-gray-400 transition"
+                          onClick={editingItemId ? handleCancelEdit : handleShowAddItem}
+                          disabled={itemLoading}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {items.length === 0 ? (
                 <div className="col-span-full text-center text-gray-700 italic">
-                  No items found for this event.
+                  {isOwner
+                    ? "No items yet. Use 'Add Item' to add one."
+                    : "No items found for this event."}
                 </div>
               ) : (
                 items.map((item) => {
@@ -512,6 +845,19 @@ export default function ViewEventPage() {
                           <div className="text-lg font-bold text-gray-900 mb-2">
                             ${ (price / 100).toFixed(2) }
                           </div>
+                          {item.product_link && (
+                            <a
+                              href={item.product_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium mb-2 transition"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                              View Product
+                            </a>
+                          )}
                           <div className="w-full mb-2">
                             <div className="w-full bg-gray-200 rounded-full h-3">
                               <div
@@ -542,26 +888,35 @@ export default function ViewEventPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 mt-4">
-                          <button
-                            onClick={() => setSelectedItem(item)}
-                            disabled={itemFunded}
-                            className={`flex-1 px-4 py-2 rounded-md font-semibold transition ${
-                              itemFunded
-                                ? 'bg-gray-300 text-gray-700 cursor-not-allowed'
-                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                            }`}
-                          >
-                            {itemFunded ? 'Fully Funded' : 'Contribute'}
-                          </button>
-                          {item.product_link && (
-                            <a
-                              href={item.product_link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center px-3 py-2 bg-blue-100 text-blue-700 font-medium rounded-md hover:bg-blue-200 transition text-sm"
+                          {isOwner ? (
+                            <div className="flex gap-2 w-full">
+                              <button
+                                onClick={() => handleEditItem(item)}
+                                disabled={itemLoading || editingItemId === item.id || showAddItem}
+                                className="flex-1 bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-2 rounded font-semibold text-sm transition disabled:opacity-50"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteClick(item)}
+                                disabled={itemLoading || editingItemId === item.id || showAddItem}
+                                className="flex-1 bg-red-100 text-red-700 hover:bg-red-200 px-3 py-2 rounded font-semibold text-sm transition disabled:opacity-50"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setSelectedItem(item)}
+                              disabled={itemFunded}
+                              className={`flex-1 px-4 py-2 rounded-md font-semibold transition ${
+                                itemFunded
+                                  ? 'bg-gray-300 text-gray-700 cursor-not-allowed'
+                                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                              }`}
                             >
-                              View Product
-                            </a>
+                              {itemFunded ? 'Fully Funded' : 'Contribute'}
+                            </button>
                           )}
                         </div>
                       </div>
@@ -579,6 +934,41 @@ export default function ViewEventPage() {
           item={selectedItem}
           onClose={() => setSelectedItem(null)}
         />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteDialogOpen && itemToDelete && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={handleCloseDeleteDialog}
+        >
+          <div 
+            className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Delete Item</h3>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to delete <span className="font-semibold">"{itemToDelete.title}"</span>? 
+              This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleCloseDeleteDialog}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded font-semibold hover:bg-gray-300 transition"
+                disabled={itemLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded font-semibold hover:bg-red-700 transition disabled:opacity-50"
+                disabled={itemLoading}
+              >
+                {itemLoading ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

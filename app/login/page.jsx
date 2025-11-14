@@ -9,6 +9,7 @@ export default function LoginPage() {
   
   // Email/Password states
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   
@@ -125,6 +126,19 @@ export default function LoginPage() {
     setError("");
 
     if (authMode === "signup") {
+      // Validate username
+      if (!username.trim()) {
+        setError("Username is required");
+        setLoading(false);
+        return;
+      }
+
+      if (username.length < 3) {
+        setError("Username must be at least 3 characters");
+        setLoading(false);
+        return;
+      }
+
       // Validate password confirmation
       if (password !== confirmPassword) {
         setError("Passwords do not match");
@@ -142,7 +156,11 @@ export default function LoginPage() {
         email: email,
         password: password,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+          data: {
+            username: username.trim(),
+            display_name: username.trim(),
+          }
         }
       });
       
@@ -171,6 +189,7 @@ export default function LoginPage() {
 
   const resetForm = () => {
     setEmail("");
+    setUsername("");
     setPassword("");
     setConfirmPassword("");
     setPhone("");
@@ -270,9 +289,9 @@ export default function LoginPage() {
               </button>
               <button
                 onClick={() => setSelectedMethod("email")}
-                className="w-full bg-white border-2 border-gray-300 text-gray-700 py-3 rounded-md font-semibold hover:bg-gray-50 transition"
+                className="w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700 transition shadow-md hover:shadow-lg"
               >
-                Continue with Email
+                {authMode === "signup" ? "Create Account with Email" : "Sign In with Email"}
               </button>
             </div>
           </>
@@ -412,6 +431,29 @@ export default function LoginPage() {
                 placeholder="you@example.com"
               />
             </div>
+            {authMode === "signup" && (
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="username">
+                  Username
+                </label>
+                <input
+                  id="username"
+                  type="text"
+                  autoComplete="username"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
+                  required
+                  disabled={loading}
+                  placeholder="Enter your username"
+                  maxLength="20"
+                  minLength="3"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  3-20 characters, letters, numbers, underscores, and hyphens only
+                </p>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="password">
