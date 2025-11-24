@@ -1,7 +1,14 @@
 import Stripe from 'stripe';
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// Use service role key to bypass RLS for updates (same as webhook)
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 export async function POST(request) {
   try {
@@ -112,6 +119,75 @@ export async function POST(request) {
     // Determine if payment was completed
     const isCompleted = paymentStatus === 'paid' && !failed;
 
+    // Fallback: If payment is completed but webhook might have failed,
+    // update the database directly (with idempotency check)
+    let databaseUpdated = false;
+    if (isCompleted && itemId) {
+      try {
+        // Check if this payment was already processed (idempotency check)
+        // Look for existing contribution with this session_id
+        const { data: existingContribs, error: contribCheckError } = await supabase
+          .from('contributions')
+          .select('id')
+          .eq('stripe_session_id', sessionId)
+          .limit(1);
+
+        // If contribution doesn't exist (or table doesn't exist), proceed with update
+        // contribCheckError might indicate table doesn't exist, which is okay
+        const alreadyProcessed = existingContribs && existingContribs.length > 0;
+        
+        if (!alreadyProcessed) {
+          // Get current item data
+          const { data: item, error: itemError } = await supabase
+            .from('items')
+            .select('current_amount_cents')
+            .eq('id', itemId)
+            .single();
+
+          if (!itemError && item) {
+            // Update item with new amount
+            const newAmount = (item.current_amount_cents || 0) + session.amount_total;
+
+            const { error: updateError } = await supabase
+              .from('items')
+              .update({ current_amount_cents: newAmount })
+              .eq('id', itemId);
+
+            if (!updateError) {
+              // Record the contribution for idempotency
+              const { contributorName, contributorEmail } = metadata;
+              try {
+                await supabase
+                  .from('contributions')
+                  .insert([{
+                    item_id: itemId,
+                    contributor_name: contributorName || null,
+                    contributor_email: contributorEmail || null,
+                    amount_cents: session.amount_total,
+                    stripe_session_id: sessionId,
+                    status: 'completed'
+                  }]);
+              } catch (contribInsertError) {
+                // Contributions table might not exist, that's okay
+                // The important part (updating item) succeeded
+                console.log('Could not record contribution (table may not exist):', contribInsertError);
+              }
+
+              databaseUpdated = true;
+              console.log('Fallback: Updated database for payment session:', sessionId);
+            }
+          }
+        } else {
+          // Payment was already processed (webhook succeeded)
+          console.log('Payment already processed by webhook:', sessionId);
+        }
+      } catch (fallbackError) {
+        // Fallback update failed - log but don't fail the verification
+        // Webhook might still process it later
+        console.error('Fallback database update failed:', fallbackError);
+      }
+    }
+
     return NextResponse.json({
       valid: true,
       status: paymentStatus,
@@ -122,7 +198,8 @@ export async function POST(request) {
       errorType: errorType,
       errorMessage: errorMessage,
       currency: session.currency,
-      customerEmail: session.customer_details?.email
+      customerEmail: session.customer_details?.email,
+      databaseUpdated: databaseUpdated // Indicate if we updated the database
     });
   } catch (error) {
     console.error('Error verifying payment:', error);

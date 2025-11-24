@@ -17,6 +17,10 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true); // Desktop: open by default
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Mobile: closed by default
   const [activeFilter, setActiveFilter] = useState("all"); // "all", "upcoming"
+  const [activeTab, setActiveTab] = useState("my-events"); // "my-events", "joined"
+  const [joinedEvents, setJoinedEvents] = useState([]);
+  const [pendingInvitations, setPendingInvitations] = useState([]);
+  const [respondingToInvite, setRespondingToInvite] = useState(null);
 
   // Helper function to get user's first name
   function getFirstName(user) {
@@ -95,8 +99,10 @@ export default function DashboardPage() {
         
         setUser(currentSession.user);
 
-        // Fetch all events
+        // Fetch all data in parallel
         fetchEvents(currentSession.user.id);
+        fetchJoinedEvents(currentSession.user.id);
+        fetchPendingInvitations(currentSession.user.email);
       } catch (error) {
         console.error('Error getting session:', error);
         if (!ignore) {
@@ -118,10 +124,14 @@ export default function DashboardPage() {
           // Session was refreshed, update user and refetch events
           setUser(session.user);
           fetchEvents(session.user.id);
+          fetchJoinedEvents(session.user.id);
+          fetchPendingInvitations(session.user.email);
         } else if (event === "SIGNED_IN" && session?.user) {
           // User signed in, update user and fetch events
           setUser(session.user);
           fetchEvents(session.user.id);
+          fetchJoinedEvents(session.user.id);
+          fetchPendingInvitations(session.user.email);
         }
       }
     );
@@ -230,6 +240,113 @@ export default function DashboardPage() {
     }
   }
 
+  // Fetch events user has joined (not owned)
+  async function fetchJoinedEvents(userId) {
+    if (!userId) return;
+
+    try {
+      // Get events where user is a member (not owner)
+      const { data: membershipData, error: membershipError } = await supabase
+        .from("event_members")
+        .select(`
+          id,
+          joined_at,
+          event_id,
+          events (
+            id,
+            title,
+            slug,
+            event_date,
+            description,
+            user_id,
+            items(current_amount_cents)
+          )
+        `)
+        .eq("user_id", userId);
+
+      if (membershipError) {
+        console.error('Error fetching joined events:', membershipError);
+        setJoinedEvents([]);
+        return;
+      }
+
+      // Filter out events where user is the owner and map data
+      const mapped = (membershipData || [])
+        .filter(m => m.events && m.events.user_id !== userId)
+        .map((membership) => {
+          const event = membership.events;
+          const items = event.items || [];
+          const totalRaised = items.reduce(
+            (sum, item) => sum + (item.current_amount_cents || 0),
+            0
+          );
+          return {
+            ...event,
+            totalRaised,
+            itemCount: items.length,
+            joinedAt: membership.joined_at,
+          };
+        });
+
+      setJoinedEvents(mapped);
+    } catch (error) {
+      console.error('Unexpected error fetching joined events:', error);
+      setJoinedEvents([]);
+    }
+  }
+
+  // Fetch pending invitations for the user
+  async function fetchPendingInvitations(email) {
+    if (!email) return;
+
+    try {
+      const response = await fetch(`/api/invitations`);
+      if (!response.ok) {
+        console.error('Error fetching invitations');
+        setPendingInvitations([]);
+        return;
+      }
+
+      const data = await response.json();
+      setPendingInvitations(data.invitations || []);
+    } catch (error) {
+      console.error('Error fetching pending invitations:', error);
+      setPendingInvitations([]);
+    }
+  }
+
+  // Handle invitation response (accept/decline)
+  async function handleInvitationResponse(invitationId, action) {
+    setRespondingToInvite(invitationId);
+
+    try {
+      const response = await fetch(`/api/invitations/${invitationId}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert(error.error || 'Failed to respond to invitation');
+        return;
+      }
+
+      // Remove from pending list
+      setPendingInvitations(prev => prev.filter(inv => inv.id !== invitationId));
+
+      // If accepted, refresh joined events
+      if (action === 'accepted' && user) {
+        fetchJoinedEvents(user.id);
+      }
+    } catch (error) {
+      console.error('Error responding to invitation:', error);
+      alert('Failed to respond to invitation');
+    } finally {
+      setRespondingToInvite(null);
+    }
+  }
+
   // Handle sign out
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -283,17 +400,25 @@ export default function DashboardPage() {
     router.push(`/event/${slug}`);
   };
 
-  // Filter events based on active filter
-  const filteredEvents = events.filter((event) => {
-    if (activeFilter === "upcoming") {
-      if (!event.event_date) return false;
-      const eventDate = new Date(event.event_date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return eventDate >= today;
+  // Get events to display based on active tab
+  const getDisplayEvents = () => {
+    if (activeTab === "joined") {
+      return joinedEvents;
     }
-    return true; // "all" shows everything
-  });
+    // For "my-events" tab, apply filter
+    return events.filter((event) => {
+      if (activeFilter === "upcoming") {
+        if (!event.event_date) return false;
+        const eventDate = new Date(event.event_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return eventDate >= today;
+      }
+      return true;
+    });
+  };
+
+  const displayEvents = getDisplayEvents();
 
   // Calculate dashboard statistics
   const stats = {
@@ -347,33 +472,38 @@ export default function DashboardPage() {
   // Navigation menu items
   const navItems = [
     {
-      name: "Home",
+      name: "My Events",
       href: "/dashboard",
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-        </svg>
-      ),
-    },
-    {
-      name: "All Events",
-      href: "/dashboard",
-      filter: "all",
+      tab: "my-events",
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
         </svg>
       ),
+      count: events.length,
     },
     {
-      name: "Upcoming Events",
+      name: "Joined Events",
       href: "/dashboard",
-      filter: "upcoming",
+      tab: "joined",
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
       ),
+      count: joinedEvents.length,
+    },
+    {
+      name: "Invitations",
+      href: "/dashboard",
+      tab: "invitations",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      ),
+      count: pendingInvitations.length,
+      highlight: pendingInvitations.length > 0,
     },
     {
       name: "Create Event",
@@ -436,36 +566,53 @@ export default function DashboardPage() {
         {/* Navigation Items */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
-            const isActive = item.filter 
-              ? activeFilter === item.filter 
-              : pathname === item.href;
-            
+            const isActive = item.tab
+              ? activeTab === item.tab
+              : pathname === item.href && !item.tab;
+
             return (
               <Link
                 key={item.name}
                 href={item.href}
                 onClick={(e) => {
-                  if (item.filter) {
+                  if (item.tab) {
                     e.preventDefault();
-                    setActiveFilter(item.filter);
+                    setActiveTab(item.tab);
                   }
                   setMobileMenuOpen(false);
                 }}
                 className={`
                   flex items-center gap-3 px-3 py-2.5 rounded-lg
-                  transition-all duration-200
+                  transition-all duration-200 relative
                   ${
                     isActive
                       ? "bg-gradient-to-r from-pink-50 to-purple-50 text-purple-700 font-semibold border-l-4 border-purple-500"
+                      : item.highlight
+                      ? "text-purple-700 bg-purple-50 hover:bg-purple-100"
                       : "text-gray-700 hover:bg-purple-50 hover:text-purple-700"
                   }
                 `}
               >
-                <span className={`flex-shrink-0 ${isActive ? "text-purple-600" : "text-gray-500"}`}>
+                <span className={`flex-shrink-0 ${isActive ? "text-purple-600" : item.highlight ? "text-purple-600" : "text-gray-500"}`}>
                   {item.icon}
                 </span>
                 {sidebarOpen && (
-                  <span className="text-sm">{item.name}</span>
+                  <>
+                    <span className="text-sm flex-1">{item.name}</span>
+                    {item.count !== undefined && item.count > 0 && (
+                      <span className={`
+                        text-xs font-bold px-2 py-0.5 rounded-full
+                        ${item.highlight
+                          ? "bg-pink-500 text-white animate-pulse"
+                          : "bg-gray-200 text-gray-700"}
+                      `}>
+                        {item.count}
+                      </span>
+                    )}
+                  </>
+                )}
+                {!sidebarOpen && item.count !== undefined && item.count > 0 && item.highlight && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-pink-500 rounded-full animate-pulse" />
                 )}
               </Link>
             );
@@ -624,35 +771,118 @@ export default function DashboardPage() {
             ) : (
               <>
                 {/* No events state */}
-                {filteredEvents.length === 0 ? (
+                {activeTab === "invitations" ? (
+                  /* Invitations Tab Content */
+                  <div className="space-y-4">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Pending Invitations</h2>
+                    {pendingInvitations.length === 0 ? (
+                      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 text-center border border-purple-100">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-200 to-pink-200 flex items-center justify-center">
+                          <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">No pending invitations</h3>
+                        <p className="text-gray-600">When someone invites you to their event, it will appear here.</p>
+                      </div>
+                    ) : (
+                      <div className="grid gap-4">
+                        {pendingInvitations.map((invitation) => (
+                          <div
+                            key={invitation.id}
+                            className="bg-white/90 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-purple-100 hover:shadow-xl transition-all"
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                              <div className="flex-1">
+                                <h3 className="text-lg font-bold text-gray-800 mb-1">
+                                  {invitation.events?.title || "Event"}
+                                </h3>
+                                <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+                                  {invitation.events?.event_date && (
+                                    <span className="flex items-center gap-1">
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                      </svg>
+                                      {new Date(invitation.events.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </span>
+                                  )}
+                                  {invitation.ownerName && (
+                                    <span className="flex items-center gap-1">
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                      </svg>
+                                      Hosted by {invitation.ownerName}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleInvitationResponse(invitation.id, 'declined')}
+                                  disabled={respondingToInvite === invitation.id}
+                                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition disabled:opacity-50"
+                                >
+                                  Decline
+                                </button>
+                                <button
+                                  onClick={() => handleInvitationResponse(invitation.id, 'accepted')}
+                                  disabled={respondingToInvite === invitation.id}
+                                  className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg font-medium hover:from-pink-600 hover:to-purple-700 transition disabled:opacity-50"
+                                >
+                                  {respondingToInvite === invitation.id ? 'Joining...' : 'Accept & Join'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : displayEvents.length === 0 ? (
                   <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-12 text-center border border-purple-100">
                     <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
                       <svg className="w-10 h-10 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        {activeTab === "joined" ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        ) : (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        )}
                       </svg>
                     </div>
                     <h2 className="text-2xl font-bold text-gray-800 mb-3">
-                      {activeFilter === "upcoming" ? "No upcoming events 🎈" : "Start your first celebration! 🎉"}
+                      {activeTab === "joined"
+                        ? "No joined events yet"
+                        : activeFilter === "upcoming"
+                        ? "No upcoming events"
+                        : "Start your first celebration!"}
                     </h2>
                     <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                      {activeFilter === "upcoming" 
+                      {activeTab === "joined"
+                        ? "When you accept an invitation or join an event, it will appear here."
+                        : activeFilter === "upcoming"
                         ? "You don't have any upcoming events. Create one to get started!"
                         : "Create a gift registry and let friends contribute to make your special day unforgettable."}
                     </p>
-                    <Link
-                      href="/create-event"
-                      className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 inline-flex items-center gap-2"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      Create Your First Event
-                    </Link>
+                    {activeTab !== "joined" && (
+                      <Link
+                        href="/create-event"
+                        className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 inline-flex items-center gap-2"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Create Your First Event
+                      </Link>
+                    )}
                   </div>
                 ) : (
                   <>
+                    {/* Section Header for Joined Events */}
+                    {activeTab === "joined" && (
+                      <h2 className="text-xl font-bold text-gray-800 mb-4">Events You've Joined</h2>
+                    )}
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                      {filteredEvents.map((event, index) => {
+                      {displayEvents.map((event, index) => {
                         const dateInfo = formatEventDate(event.event_date);
                         const gradientClass = getEventGradient(index);
                         return (
@@ -661,18 +891,26 @@ export default function DashboardPage() {
                             className={`bg-gradient-to-br ${gradientClass} rounded-2xl p-6 flex flex-col justify-between relative cursor-pointer hover:shadow-2xl transition-all transform hover:-translate-y-2 border-2 group`}
                             onClick={() => handleCardClick(event.slug)}
                           >
-                            {/* Delete button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteClick(event);
-                              }}
-                              className="absolute top-3 right-3 bg-white/90 hover:bg-red-500 text-gray-500 hover:text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg transition-all shadow-md z-10 opacity-0 group-hover:opacity-100"
-                              title="Delete event"
-                              disabled={deletingEventId === event.id}
-                            >
-                              ×
-                            </button>
+                            {/* Delete button - only show for owned events */}
+                            {activeTab !== "joined" && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteClick(event);
+                                }}
+                                className="absolute top-3 right-3 bg-white/90 hover:bg-red-500 text-gray-500 hover:text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg transition-all shadow-md z-10 opacity-0 group-hover:opacity-100"
+                                title="Delete event"
+                                disabled={deletingEventId === event.id}
+                              >
+                                ×
+                              </button>
+                            )}
+                            {/* Joined badge for joined events */}
+                            {activeTab === "joined" && (
+                              <div className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
+                                Joined
+                              </div>
+                            )}
 
                             {/* Event Header */}
                             <div className="mb-4">
