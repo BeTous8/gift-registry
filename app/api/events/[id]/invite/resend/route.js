@@ -68,9 +68,9 @@ export async function POST(request, { params }) {
 
     try {
       await resend.emails.send({
-        from: 'Memora <onboarding@resend.dev>',
+        from: process.env.RESEND_FROM_EMAIL || 'Memora <onboarding@resend.dev>',
         to: email.toLowerCase(),
-        subject: `Reminder: You're invited to ${event.title}! 🎉`,
+        subject: `Reminder: ${ownerName} invited you to ${event.title}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -78,40 +78,64 @@ export async function POST(request, { params }) {
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
           </head>
-          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f3e8ff;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-              <div style="background: linear-gradient(135deg, #ec4899, #8b5cf6, #3b82f6); padding: 40px; border-radius: 16px 16px 0 0; text-align: center;">
-                <h1 style="color: white; margin: 0; font-size: 28px;">Reminder: You're Invited! 🎉</h1>
-              </div>
-              <div style="background: white; padding: 40px; border-radius: 0 0 16px 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                <p style="color: #374151; font-size: 16px; margin-bottom: 24px;">
-                  <strong>${ownerName}</strong> is reminding you about their event on Memora:
-                </p>
-                <div style="background: #faf5ff; border-left: 4px solid #8b5cf6; padding: 20px; margin-bottom: 24px; border-radius: 0 8px 8px 0;">
-                  <h2 style="color: #1f2937; margin: 0 0 8px 0; font-size: 22px;">${event.title}</h2>
-                  ${eventDate ? `<p style="color: #6b7280; margin: 0; font-size: 14px;">📅 ${eventDate}</p>` : ''}
-                  ${event.description ? `<p style="color: #6b7280; margin: 12px 0 0 0; font-size: 14px;">${event.description}</p>` : ''}
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; background-color: #f9fafb;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+              <div style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 32px;">
+                <div style="border-bottom: 2px solid #3b82f6; padding-bottom: 16px; margin-bottom: 24px;">
+                  <h1 style="color: #1f2937; margin: 0; font-size: 24px; font-weight: 600;">Event Invitation Reminder</h1>
                 </div>
-                <p style="color: #374151; font-size: 16px; margin-bottom: 24px;">
-                  Join the event to view the gift registry and contribute to make this occasion special!
+
+                <p style="color: #374151; font-size: 16px; margin: 0 0 16px 0;">
+                  Hello,
                 </p>
-                <div style="text-align: center; margin-bottom: 24px;">
-                  <a href="${joinUrl}" style="display: inline-block; background: linear-gradient(135deg, #ec4899, #8b5cf6); color: white; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: bold; font-size: 16px;">
-                    View Invitation & Join
-                  </a>
+
+                <p style="color: #374151; font-size: 16px; margin: 0 0 24px 0;">
+                  This is a reminder that <strong>${ownerName}</strong> has invited you to their event on Memora.
+                </p>
+
+                <div style="background-color: #f3f4f6; border-left: 3px solid #3b82f6; padding: 16px; margin-bottom: 24px;">
+                  <h2 style="color: #1f2937; margin: 0 0 8px 0; font-size: 18px; font-weight: 600;">${event.title}</h2>
+                  ${eventDate ? `<p style="color: #6b7280; margin: 0 0 8px 0; font-size: 14px;">Date: ${eventDate}</p>` : ''}
+                  ${event.description ? `<p style="color: #6b7280; margin: 0; font-size: 14px;">${event.description}</p>` : ''}
                 </div>
-                <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
-                  If the button doesn't work, copy and paste this link:<br>
-                  <a href="${joinUrl}" style="color: #8b5cf6;">${joinUrl}</a>
+
+                <p style="color: #374151; font-size: 16px; margin: 0 0 24px 0;">
+                  Click the link below to view the event details and gift registry.
+                </p>
+
+                <div style="margin-bottom: 24px;">
+                  <a href="${joinUrl}" style="display: inline-block; background-color: #3b82f6; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 500; font-size: 16px;">View Invitation</a>
+                </div>
+
+                <p style="color: #6b7280; font-size: 14px; margin: 0; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                  If the button does not work, copy and paste this link into your browser:<br>
+                  <a href="${joinUrl}" style="color: #3b82f6; word-break: break-all;">${joinUrl}</a>
                 </p>
               </div>
-              <p style="color: #9ca3af; font-size: 12px; text-align: center; margin-top: 24px;">
-                Sent via <a href="${siteUrl}" style="color: #8b5cf6; text-decoration: none;">Memora</a> - Gift Registry Platform
+
+              <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 24px 0 0 0;">
+                Sent via Memora - <a href="${siteUrl}" style="color: #3b82f6; text-decoration: none;">${siteUrl}</a>
               </p>
             </div>
           </body>
           </html>
         `,
+        text: `
+Hello,
+
+This is a reminder that ${ownerName} has invited you to their event on Memora.
+
+Event Details:
+${event.title}
+${eventDate ? `Date: ${eventDate}` : ''}
+${event.description ? `\n${event.description}` : ''}
+
+View the event and gift registry by clicking this link:
+${joinUrl}
+
+---
+Sent via Memora - ${siteUrl}
+        `.trim(),
       });
       console.log('Reminder email sent to:', email);
     } catch (emailError) {
