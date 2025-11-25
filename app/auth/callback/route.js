@@ -7,7 +7,8 @@ export async function GET(request) {
   const code = requestUrl.searchParams.get('code');
   const error_description = requestUrl.searchParams.get('error_description');
   const error = requestUrl.searchParams.get('error');
-  const next = '/dashboard';
+  const returnUrl = requestUrl.searchParams.get('returnUrl');
+  const next = returnUrl ? decodeURIComponent(returnUrl) : '/dashboard';
 
   // Handle OAuth errors
   if (error_description || error) {

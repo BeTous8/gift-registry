@@ -60,10 +60,7 @@ export default function JoinEventPage() {
       async (authEvent, session) => {
         if (authEvent === "SIGNED_IN" && session?.user) {
           setUser(session.user);
-          // Auto-join after login if we have the event
-          if (event) {
-            handleJoin(session.user);
-          }
+          // User can now click "Join This Event" button manually
         }
       }
     );

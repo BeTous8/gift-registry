@@ -22,16 +22,24 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [oauthLoading, setOauthLoading] = useState(null); // Track which OAuth provider is loading
+  const [returnUrl, setReturnUrl] = useState('/dashboard'); // Default to dashboard
 
-  // Check for OAuth errors in URL params on mount
+  // Check for OAuth errors and returnUrl in URL params on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const errorParam = urlParams.get('error');
+      const returnUrlParam = urlParams.get('returnUrl');
+
       if (errorParam) {
         setError(decodeURIComponent(errorParam));
         // Clean URL
         window.history.replaceState({}, '', '/login');
+      }
+
+      // Store returnUrl in state for use in redirects
+      if (returnUrlParam) {
+        setReturnUrl(decodeURIComponent(returnUrlParam));
       }
     }
   }, []);
@@ -47,7 +55,7 @@ export default function LoginPage() {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider,
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${window.location.origin}${returnUrl}`,
           skipBrowserRedirect: false,
           // For mobile, ensure proper redirect handling
           ...(isMobile && {
@@ -110,12 +118,12 @@ export default function LoginPage() {
         token: otpCode,
         type: 'sms'
       });
-      
+
       setLoading(false);
       if (error) {
         setError(error.message);
       } else {
-        window.location.href = '/dashboard';
+        window.location.href = returnUrl;
       }
     }
   };
@@ -156,7 +164,7 @@ export default function LoginPage() {
         email: email,
         password: password,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          emailRedirectTo: `${window.location.origin}${returnUrl}`,
           data: {
             username: username.trim(),
             display_name: username.trim(),
@@ -177,12 +185,12 @@ export default function LoginPage() {
         email: email,
         password: password
       });
-      
+
       setLoading(false);
       if (error) {
         setError(error.message);
       } else {
-        window.location.href = '/dashboard';
+        window.location.href = returnUrl;
       }
     }
   };
