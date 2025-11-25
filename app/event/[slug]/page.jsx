@@ -843,6 +843,59 @@ export default function ViewEventPage() {
                               <p className="font-medium text-gray-700 text-sm truncate">{invite.email}</p>
                               <p className="text-xs text-yellow-600">Pending</p>
                             </div>
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (!confirm(`Delete invitation for ${invite.email}?`)) return;
+                                try {
+                                  const res = await fetch(`/api/invitations/${invite.id}`, {
+                                    method: 'DELETE',
+                                  });
+                                  if (res.ok) {
+                                    setInvitations(invitations.filter(inv => inv.id !== invite.id));
+                                  } else {
+                                    alert('Failed to delete invitation');
+                                  }
+                                } catch (err) {
+                                  alert('Error deleting invitation');
+                                }
+                              }}
+                              className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-medium transition"
+                            >
+                              Delete
+                            </button>
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const btn = e.currentTarget;
+                                btn.disabled = true;
+                                btn.textContent = '...';
+                                try {
+                                  const res = await fetch(`/api/events/${event.id}/invite/resend`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ email: invite.email, userId: user.id }),
+                                  });
+                                  if (res.ok) {
+                                    btn.textContent = '✓';
+                                    btn.className = 'text-xs bg-green-500 text-white px-2 py-1 rounded font-medium';
+                                  } else {
+                                    btn.textContent = '✗';
+                                    btn.className = 'text-xs bg-red-500 text-white px-2 py-1 rounded font-medium';
+                                  }
+                                } catch (err) {
+                                  btn.textContent = '✗';
+                                }
+                                setTimeout(() => {
+                                  btn.disabled = false;
+                                  btn.textContent = 'Resend';
+                                  btn.className = 'text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded font-medium transition';
+                                }, 2000);
+                              }}
+                              className="text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded font-medium transition"
+                            >
+                              Resend
+                            </button>
                           </div>
                         ))}
                       </div>

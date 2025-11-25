@@ -343,6 +343,73 @@ const [user, setUser] = useState(null)        // Current auth user
 - [x] Email notifications for invitations ✅ DONE (via Resend)
 - [ ] End-to-end testing of invite flow
 
+### ✅ COMPLETED - Email Notifications Feature (with Known Limitations)
+
+**Status:** Email notifications are working! Emails are being sent successfully via Resend.
+
+**Files Modified:**
+1. ✅ `app/api/events/[id]/invite/route.js` - Modified Resend initialization to be runtime instead of build-time
+2. ✅ `app/event/[slug]/page.jsx` - Added "Delete" and "Resend" buttons to pending invitations
+3. ✅ `app/api/events/[id]/invite/resend/route.js` - NEW file for resending invitation emails
+4. ✅ `app/api/invitations/[id]/route.js` - NEW file for deleting invitations
+5. ✅ `app/dashboard/page.jsx` - Fixed 400 error by passing `userId` instead of `email` to `/api/invitations`
+
+**What Was Fixed:**
+- Changed `const resend = new Resend(process.env.RESEND_API_KEY)` to a `getResendClient()` function to fix build-time initialization issue
+- Added delete functionality for pending invitations
+- Added resend button next to pending invitations
+- Fixed dashboard invitation fetching error (was passing email instead of userId)
+
+**🚨 IMPORTANT LIMITATION - Resend Sandbox Domain:**
+
+**Issue:** Using `onboarding@resend.dev` (Resend's sandbox domain) has restrictions:
+- ✅ Emails ARE being sent successfully
+- ⚠️ Emails go to SPAM folder (not inbox) - Gmail marks them as suspicious
+- ❌ Emails can ONLY be delivered to the account owner's verified email (bn.tousifar86@gmail.com)
+- ❌ Other recipients (wife, friends) will NOT receive emails until domain is verified
+
+**Why This Happens:**
+- Sandbox domain (`onboarding@resend.dev`) is flagged by Gmail as spam
+- Resend restricts sandbox emails to only the account owner's email for security
+- Adding emails to "Audience" doesn't bypass this restriction
+
+**SOLUTION - Required for Production:**
+
+To send emails to ANY recipient and avoid spam folder:
+
+1. **Add Custom Domain in Resend:**
+   - Go to: https://resend.com/domains
+   - Click "+ Add Domain"
+   - Add your domain (e.g., `memoraapp.com` or purchase one)
+   - Add DNS records (SPF, DKIM, DMARC) to your domain provider
+   - Wait for verification (usually takes a few minutes)
+
+2. **Update Code to Use Custom Domain:**
+   - In `app/api/events/[id]/invite/route.js` line 115, change:
+     ```javascript
+     from: 'Memora <onboarding@resend.dev>',  // OLD
+     ```
+     to:
+     ```javascript
+     from: 'Memora <noreply@yourdomain.com>',  // NEW
+     ```
+   - Same change in `app/api/events/[id]/invite/resend/route.js` line 71
+
+3. **Benefits:**
+   - ✅ Emails will be delivered to ANY email address
+   - ✅ Better inbox delivery (less likely to go to spam)
+   - ✅ Professional sender address
+   - ✅ Better email reputation
+
+**Current Workaround for Testing:**
+- Test invitations using your own email (bn.tousifar86@gmail.com)
+- Check SPAM folder for emails
+- Verify links and functionality work correctly
+- Before launch, MUST add custom domain
+
+**Environment Variables Needed:**
+- `RESEND_API_KEY` must be in both `.env.local` (local) AND Netlify dashboard (production)
+
 ### Edge Cases (Deferred)
 - [ ] Over-funding prevention (contribution > remaining amount)
 - [ ] Concurrent contribution race conditions
@@ -700,4 +767,4 @@ Remember: The goal is a delightful, reliable gift registry experience that bring
 
 ---
 
-*Last Updated: Week 2, Day 5 - Group/Invitation Feature COMPLETE (All 5 Phases Done!)*
+*Last Updated: Week 2, Day 5 - Group/Invitation Feature COMPLETE (All 5 Phases Done!) - Email notification bug in progress*

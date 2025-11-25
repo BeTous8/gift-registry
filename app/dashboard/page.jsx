@@ -102,7 +102,7 @@ export default function DashboardPage() {
         // Fetch all data in parallel
         fetchEvents(currentSession.user.id);
         fetchJoinedEvents(currentSession.user.id);
-        fetchPendingInvitations(currentSession.user.email);
+        fetchPendingInvitations(currentSession.user.id);
       } catch (error) {
         console.error('Error getting session:', error);
         if (!ignore) {
@@ -125,13 +125,13 @@ export default function DashboardPage() {
           setUser(session.user);
           fetchEvents(session.user.id);
           fetchJoinedEvents(session.user.id);
-          fetchPendingInvitations(session.user.email);
+          fetchPendingInvitations(session.user.id);
         } else if (event === "SIGNED_IN" && session?.user) {
           // User signed in, update user and fetch events
           setUser(session.user);
           fetchEvents(session.user.id);
           fetchJoinedEvents(session.user.id);
-          fetchPendingInvitations(session.user.email);
+          fetchPendingInvitations(session.user.id);
         }
       }
     );
@@ -296,13 +296,16 @@ export default function DashboardPage() {
   }
 
   // Fetch pending invitations for the user
-  async function fetchPendingInvitations(email) {
-    if (!email) return;
+  async function fetchPendingInvitations(userId) {
+    if (!userId) {
+      setPendingInvitations([]);
+      return;
+    }
 
     try {
-      const response = await fetch(`/api/invitations`);
+      const response = await fetch(`/api/invitations?userId=${userId}`);
       if (!response.ok) {
-        console.error('Error fetching invitations');
+        console.warn('Could not fetch invitations - user may not be fully authenticated yet');
         setPendingInvitations([]);
         return;
       }
