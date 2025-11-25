@@ -42,7 +42,7 @@ export default function JoinEventPage() {
         }
 
         setEvent(data.event);
-        setOwnerName(data.ownerName || "Unknown");
+        setOwnerName(data.event.owner_name || "Unknown");
       } catch (err) {
         console.error("Error loading event:", err);
         setError("Something went wrong. Please try again.");
@@ -89,6 +89,7 @@ export default function JoinEventPage() {
       const response = await fetch(`/api/events/join/${code}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: currentUser.id })
       });
 
       const data = await response.json();

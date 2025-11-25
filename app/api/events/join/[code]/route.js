@@ -13,7 +13,7 @@ export async function GET(request, { params }) {
 
     const { data: event, error } = await supabaseAdmin
       .from('events')
-      .select('id, title, description, event_date, user_id')
+      .select('id, title, description, event_date, user_id, slug')
       .eq('invite_code', code)
       .single();
 
@@ -34,6 +34,7 @@ export async function GET(request, { params }) {
         title: event.title,
         description: event.description,
         event_date: event.event_date,
+        slug: event.slug,
         owner_name: ownerName
       }
     });
@@ -57,7 +58,7 @@ export async function POST(request, { params }) {
     // Get event by invite code
     const { data: event, error: eventError } = await supabaseAdmin
       .from('events')
-      .select('id, title, user_id')
+      .select('id, title, user_id, slug')
       .eq('invite_code', code)
       .single();
 
@@ -76,7 +77,7 @@ export async function POST(request, { params }) {
       .select('id')
       .eq('event_id', event.id)
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (existingMember) {
       return NextResponse.json({
@@ -120,6 +121,7 @@ export async function POST(request, { params }) {
       success: true,
       eventId: event.id,
       eventTitle: event.title,
+      slug: event.slug,
       message: 'Successfully joined the event!'
     });
 
