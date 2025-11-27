@@ -57,10 +57,41 @@ export async function GET(request) {
         if (!invite.events) return invite;
 
         const { data: ownerData } = await supabaseAdmin.auth.admin.getUserById(invite.events.user_id);
-        const ownerName = ownerData?.user?.user_metadata?.full_name ||
-          ownerData?.user?.user_metadata?.name ||
-          ownerData?.user?.email?.split('@')[0] ||
-          'Someone';
+
+        // Extract first and last name from user metadata
+        let firstName = '';
+        let lastName = '';
+        let ownerName = '';
+
+        if (ownerData?.user) {
+          const metadata = ownerData.user.user_metadata || {};
+
+          // Priority 1: Google OAuth provides given_name and family_name
+          if (metadata.given_name) {
+            firstName = metadata.given_name;
+            lastName = metadata.family_name || '';
+          }
+          // Priority 2: full_name field (split into first and last)
+          else if (metadata.full_name) {
+            const nameParts = metadata.full_name.trim().split(' ');
+            firstName = nameParts[0];
+            lastName = nameParts.slice(1).join(' ');
+          }
+          // Priority 3: username or display_name (custom auth)
+          else if (metadata.username || metadata.display_name) {
+            const name = metadata.username || metadata.display_name;
+            const nameParts = name.trim().split(' ');
+            firstName = nameParts[0];
+            lastName = nameParts.slice(1).join(' ');
+          }
+          // Priority 4: Extract from email
+          else if (ownerData.user.email) {
+            firstName = ownerData.user.email.split('@')[0];
+          }
+
+          // Build full name
+          ownerName = `${firstName} ${lastName}`.trim() || 'Someone';
+        }
 
         return {
           ...invite,

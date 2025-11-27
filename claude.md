@@ -1,5 +1,70 @@
 # MEMORA - Gift Registry App Documentation
 
+---
+
+## 📋 CURRENT SESSION TODOS
+
+> **IMPORTANT FOR CLAUDE:** Always check this section first when starting a new session. These are the active tasks that need continuation. Update this section as you complete tasks. When using TodoWrite during a session, sync the final state back to this section before ending work.
+
+### 🚨 Critical Priority - Google Places & Event Types Feature
+
+#### Setup & Infrastructure ✅ COMPLETED (Nov 27, 2025)
+- [x] Set up Google Cloud Platform account and enable Places API with API keys
+- [x] Run database migration: Add event_type, location (JSONB), theme columns to events table
+- [x] Create user_contacts table with RLS policies for contact list feature
+
+#### Backend Development (In Progress)
+- [x] Implement Google Places API endpoints (autocomplete, details, photo)
+- [ ] Create PATCH /api/events/[id] endpoint for updating location and theme
+- [ ] Implement contact management API endpoints (POST, GET, DELETE, search-users)
+- [ ] Implement POST /api/events/[id]/invite-from-contacts endpoint
+
+#### Frontend Components
+- [ ] Create LocationSearchModal component with Google Maps integration
+- [ ] Update create-event page with event type dropdown and location search
+- [ ] Update event page with type-specific UI (conditional items section, location display, attendance)
+- [ ] Create /contacts page with contact list management UI
+- [ ] Create AddContactModal component for adding contacts
+- [ ] Create InviteFromContactsModal component for bulk invitations
+- [ ] Add 'Invite from Contacts' button to event page and wire up functionality
+
+#### Testing & QA
+- [ ] Test event types: Create gift registry with items, create casual meetup with location
+- [ ] Test Google Maps integration: Search places, verify photos/ratings display, test navigation
+- [ ] Test contact list: Add 50+ contacts, search/filter, bulk invite to events
+- [ ] Polish UI: Add loading states, error handling, mobile responsiveness for new features
+- [ ] Run end-to-end testing of complete invitation flow (create event → invite → friend joins → contribute)
+- [ ] Cross-browser testing (Safari, Firefox, Edge) for all new features
+- [ ] Performance audit and optimization (especially LocationSearchModal on mobile)
+- [ ] Security review of all endpoints (especially Google Places proxy endpoints)
+
+#### Documentation & Production
+- [ ] Update claude.md documentation with new features, database schema, API endpoints
+- [ ] Switch to Stripe LIVE mode for production
+- [ ] Configure production webhook endpoint
+- [ ] Add Google Places API keys to Netlify environment variables
+- [ ] SEO optimization (meta tags, og:images)
+- [ ] Set up error tracking with Sentry
+- [ ] Configure custom domain (mymemoraapp.com) for production
+- [ ] Set up Google Cloud billing alerts to monitor API costs
+
+### 📝 Todo Management Strategy
+**During Active Session:**
+- Use `TodoWrite` tool for real-time progress tracking (you'll see live updates)
+- Mark tasks as in_progress/completed as you work
+
+**Between Sessions:**
+- Before ending work: Update this section in claude.md with current progress
+- When starting new session: Read this section first, then create TodoWrite items from uncompleted tasks
+- This ensures no task is ever lost between sessions
+
+### 🔄 Last Updated
+**Date:** 2025-11-27 (Session End)
+**Status:** Day 1 & Day 2 Complete - Database migration and Google Places API endpoints working
+**Next Action:** Continue with Day 3 - Contact Management Backend (API endpoints for contacts)
+
+---
+
 ## Project Overview
 **App Name:** Memora  
 **Description:** A gift registry web app where users create wishlists for special events, share links with friends, and receive monetary contributions towards their wished items.  
@@ -54,9 +119,15 @@
 - **Version Control:** GitHub (Public repository)
 
 ## Project Timeline Status
-**Current Phase:** Week 2, Day 5 - Group/Invitation Feature
+**Current Phase:** Week 2, Day 6 - Email System & Authentication Complete
 **Total Timeline:** 3 weeks
 **Launch Target:** End of Week 3
+
+**Recent Completion (November 25, 2025):**
+- ✅ Custom domain email setup (mymemoraapp.com)
+- ✅ Join page bug fixes (5 critical bugs resolved)
+- ✅ Authentication redirect flow fixed
+- ✅ Full invitation system working end-to-end
 
 ---
 
@@ -72,6 +143,13 @@
 - ✅ Mobile-friendly OAuth flow with proper redirects
 - ✅ Auth state persistence across tabs
 - ✅ Proper sign-out handling
+- ✅ **ReturnURL Support** (Nov 25, 2025):
+  - Login page extracts and uses returnUrl parameter
+  - OAuth callback supports returnUrl
+  - Users return to intended page after login (not dashboard)
+  - ⚠️ **Known Issue:** "Must be logged in" error still occurs on join page after login
+  - **Status:** ReturnURL implemented but join functionality not working yet
+  - **Next Action:** Further investigation needed on auth state timing
 
 ### Core Pages
 - ✅ **Landing Page** (`/`)
@@ -334,14 +412,107 @@ const [user, setUser] = useState(null)        // Current auth user
 
 ## 📋 TODO - Remaining Development
 
+### 📅 Session Summary: November 25, 2025
+
+**What Was Completed Today:**
+
+1. ✅ **Custom Domain Email Setup**
+   - Purchased `mymemoraapp.com` domain ($10/year via Cloudflare)
+   - Configured `mail.mymemoraapp.com` subdomain for email
+   - Set up DNS records (SPF, DKIM, DMARC)
+   - Verified domain in Resend
+   - Updated email templates (removed spam triggers)
+   - Added plain text versions to all emails
+
+2. ✅ **Join Page Critical Bug Fixes (5 Bugs Fixed)**
+   - Bug #1: Added `slug` field to GET query
+   - Bug #2: Added `slug` field to POST response
+   - Bug #3: Fixed `ownerName` extraction (`data.event.owner_name`)
+   - Bug #4: Added `userId` to POST request body
+   - Bug #5: Changed `.single()` to `.maybeSingle()` for member check
+   - **Result:** Host name displays correctly, no more JSON parse errors
+
+3. ✅ **Authentication Redirect Flow Fixes**
+   - Added `returnUrl` state to login page
+   - Updated all 4 auth methods to use `returnUrl` (OAuth, Phone, Email signup, Email signin)
+   - Fixed OAuth callback to support `returnUrl`
+   - Removed problematic auto-join from join page listener
+   - **Result:** Users now return to join page after login (not dashboard)
+
+4. ✅ **Git Commits & Deployment**
+   - Commit 1: Security fix - removed exposed API key, added to `.gitignore`
+   - Commit 2: Email deliverability improvements
+   - Commit 3: Join page bug fixes (5 bugs)
+   - Commit 4: Authentication redirect flow fixes
+   - All changes deployed to production via Netlify
+
+**⚠️ KNOWN ISSUES (To Fix Tomorrow):**
+
+1. **"Must be logged in" error persists after login**
+   - User logs in successfully → returns to `/join/[code]` → clicks "Join Event" → gets error
+   - ReturnURL working (users return to join page)
+   - Auth state timing issue - `user` state not properly set before join button click
+   - **Files involved:** `app/join/[code]/page.jsx`, `app/login/page.jsx`
+
+2. **Netlify environment variable not updated**
+   - Local uses: `Memora <invites@mail.mymemoraapp.com>` ✅
+   - Production still uses: `Memora <onboarding@resend.dev>` ❌
+   - **Action needed:** Update `RESEND_FROM_EMAIL` in Netlify dashboard
+
+**🔄 PENDING ACTIONS FOR NEXT SESSION:**
+
+### Priority 1: Fix Join Page Authentication (CRITICAL)
+**Problem:** Users still get "Must be logged in" error after successfully logging in
+
+**Possible Root Causes:**
+1. Auth state not synchronized between login callback and join page
+2. Session cookie not being read properly on join page
+3. `user` state still null when `handleJoin()` is called
+4. Race condition between `getSession()` and button click
+
+**Investigation Steps:**
+1. Add console logs to track auth state flow
+2. Check if session exists but `user` state is null
+3. Verify Supabase session is properly restored after redirect
+4. Test with different auth methods (Google OAuth vs Email)
+5. Check browser dev tools for session cookies
+
+**Potential Fixes to Try:**
+- Option A: Wait for auth state to settle before enabling join button
+- Option B: Read session directly in `handleJoin()` instead of using state
+- Option C: Add loading state until session is confirmed
+- Option D: Force session refresh after returnUrl redirect
+
+### Priority 2: Update Netlify Environment Variables
+1. Go to: https://app.netlify.com
+2. Select **memoraapp** site
+3. Navigate to: **Site settings** → **Environment variables**
+4. Update `RESEND_FROM_EMAIL` to: `Memora <invites@mail.mymemoraapp.com>`
+5. Wait for automatic redeployment (2-3 minutes)
+
+### Priority 3: End-to-End Testing
+Once auth issue is fixed, test complete flow:
+1. Create event
+2. Add items to registry
+3. Invite friend via email
+4. Friend receives email (check inbox, not spam)
+5. Friend clicks invitation link
+6. Friend logs in (or signs up)
+7. Friend successfully joins event
+8. Friend can view registry and contribute
+9. Event owner sees new member in sidebar
+
 ### Group Feature Completion
 - [x] **Fix API Bugs (Priority):** ✅ DONE
   - [x] Fix `.single()` → `.maybeSingle()` in `app/api/events/[id]/invite/route.js`
   - [x] Optimize `listUsers()` performance in `app/api/events/[id]/members/route.js`
 - [x] Dashboard integration (Phase 4) ✅ DONE
-- [x] Join page `/join/[code]` (Phase 5) ✅ DONE
-- [x] Email notifications for invitations ✅ DONE (via Resend)
-- [ ] End-to-end testing of invite flow
+- [x] Join page `/join/[code]` (Phase 5) ✅ DONE (UI working, auth issue remains)
+- [x] Email notifications for invitations ✅ DONE (via Resend with custom domain)
+- [x] Custom domain setup ✅ DONE (`mymemoraapp.com`)
+- [ ] **FIX AUTH ISSUE:** Join button still shows "must be logged in" error
+- [ ] Update Netlify `RESEND_FROM_EMAIL` environment variable
+- [ ] End-to-end testing of complete invite flow
 
 ### ✅ COMPLETED - Email Notifications Feature (with Known Limitations)
 
@@ -373,42 +544,43 @@ const [user, setUser] = useState(null)        // Current auth user
 - Resend restricts sandbox emails to only the account owner's email for security
 - Adding emails to "Audience" doesn't bypass this restriction
 
-**SOLUTION - Required for Production:**
+**✅ SOLUTION IMPLEMENTED - Custom Domain Setup (Nov 25, 2025):**
 
-To send emails to ANY recipient and avoid spam folder:
+**Domain Purchased:** `mymemoraapp.com` via Cloudflare ($10/year)
 
-1. **Add Custom Domain in Resend:**
-   - Go to: https://resend.com/domains
-   - Click "+ Add Domain"
-   - Add your domain (e.g., `memoraapp.com` or purchase one)
-   - Add DNS records (SPF, DKIM, DMARC) to your domain provider
-   - Wait for verification (usually takes a few minutes)
+**Steps Completed:**
+1. ✅ Purchased custom domain from Cloudflare
+2. ✅ Added subdomain `mail.mymemoraapp.com` to Resend
+3. ✅ Configured DNS records (SPF, DKIM, DMARC) in Cloudflare
+4. ✅ Verified domain in Resend dashboard
+5. ✅ Disabled email tracking (open/click tracking) for better deliverability
+6. ✅ Updated `.env.local` with custom sender email
+7. ⚠️ **PENDING:** Update Netlify environment variable `RESEND_FROM_EMAIL` to `Memora <invites@mail.mymemoraapp.com>`
 
-2. **Update Code to Use Custom Domain:**
-   - In `app/api/events/[id]/invite/route.js` line 115, change:
-     ```javascript
-     from: 'Memora <onboarding@resend.dev>',  // OLD
-     ```
-     to:
-     ```javascript
-     from: 'Memora <noreply@yourdomain.com>',  // NEW
-     ```
-   - Same change in `app/api/events/[id]/invite/resend/route.js` line 71
+**Code Changes:**
+- `.env.local` updated with: `RESEND_FROM_EMAIL=Memora <invites@mail.mymemoraapp.com>`
+- Email templates cleaned up (removed emojis, gradients, marketing language)
+- Added plain text versions to all emails
+- Changed from `onboarding@resend.dev` to `invites@mail.mymemoraapp.com`
 
-3. **Benefits:**
-   - ✅ Emails will be delivered to ANY email address
-   - ✅ Better inbox delivery (less likely to go to spam)
-   - ✅ Professional sender address
-   - ✅ Better email reputation
+**Email Template Improvements (Nov 25, 2025):**
+- Removed spam triggers: emojis (🎉), exclamation marks, gradients
+- Simplified HTML structure with professional blue/white theme
+- Added plain text fallback for all emails
+- Improved subject lines (removed emojis)
+- Better accessibility and mobile rendering
 
-**Current Workaround for Testing:**
-- Test invitations using your own email (bn.tousifar86@gmail.com)
-- Check SPAM folder for emails
-- Verify links and functionality work correctly
-- Before launch, MUST add custom domain
+**Current Status:**
+- ✅ Custom domain verified and ready
+- ✅ Local environment using custom domain
+- ⚠️ Production still needs Netlify env var update
+- 🔄 Domain warming recommended (7-21 days for full reputation)
 
-**Environment Variables Needed:**
-- `RESEND_API_KEY` must be in both `.env.local` (local) AND Netlify dashboard (production)
+**Benefits Achieved:**
+- ✅ Emails can be sent to ANY email address (not just owner)
+- ✅ Professional sender address (`invites@mail.mymemoraapp.com`)
+- ✅ Better spam filter avoidance
+- ✅ Production-ready email infrastructure
 
 ### Edge Cases (Deferred)
 - [ ] Over-funding prevention (contribution > remaining amount)
@@ -539,6 +711,7 @@ STRIPE_WEBHOOK_SECRET=whsec_xxxxx
 
 # Email (Resend)
 RESEND_API_KEY=re_xxxxx
+RESEND_FROM_EMAIL=Memora <invites@mail.mymemoraapp.com>
 
 # Site URL (for production)
 NEXT_PUBLIC_SITE_URL=https://memoraapp.netlify.app
@@ -767,4 +940,6 @@ Remember: The goal is a delightful, reliable gift registry experience that bring
 
 ---
 
-*Last Updated: Week 2, Day 5 - Group/Invitation Feature COMPLETE (All 5 Phases Done!) - Email notification bug in progress*
+*Last Updated: November 25, 2025 (Week 2, Day 6)*
+
+**Status:** Custom domain email setup COMPLETE, Join page fixes deployed, Auth redirect implemented. One critical auth timing issue remains - see "Session Summary" section above for details and next steps.

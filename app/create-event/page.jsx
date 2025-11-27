@@ -8,6 +8,7 @@ export default function CreateEventPage() {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [description, setDescription] = useState("");
+  const [eventType, setEventType] = useState("gift_registry");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [user, setUser] = useState(null);
@@ -28,6 +29,16 @@ export default function CreateEventPage() {
     const timestamp = Date.now();
     return `${baseSlug}-${timestamp}`;
   }
+
+  // Generate a unique random invite code (12 characters: alphanumeric)
+ function generateInviteCode() {
+   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+   let code = '';
+   for (let i = 0; i < 12; i++) {
+     code += chars.charAt(Math.floor(Math.random() * chars.length));
+   }
+   return code;
+ }
 
   // Check if user is logged in and redirect if not
   useEffect(() => {
@@ -77,6 +88,7 @@ export default function CreateEventPage() {
 
     // Generate slug from title
     const slug = generateSlug(title);
+    const inviteCode = generateInviteCode();
 
     // Insert event into database
     const { data, error: insertError } = await supabase
@@ -87,6 +99,8 @@ export default function CreateEventPage() {
         slug: slug,
         description: description.trim() || null,
         event_date: date || null,
+        event_type: eventType,
+        invite_code: inviteCode,
       })
       .select()
       .single();
@@ -120,6 +134,27 @@ export default function CreateEventPage() {
                 required
                 placeholder="Enter event title"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1" htmlFor="eventType">
+                Event Type <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="eventType"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
+                value={eventType}
+                onChange={(e) => setEventType(e.target.value)}
+                required
+              >
+                <option value="gift_registry">Gift Registry</option>
+                <option value="casual_meetup">Casual Meetup</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                {eventType === "gift_registry"
+                  ? "Create a wishlist with items for contributions"
+                  : "Organize a casual gathering with location details"}
+              </p>
             </div>
 
             <div>
