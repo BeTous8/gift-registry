@@ -77,7 +77,7 @@ export async function POST(request, { params }) {
       .select('id')
       .eq('event_id', event.id)
       .eq('user_id', userId)
-      .maybeSingle();
+      .single();
 
     if (existingMember) {
       return NextResponse.json({

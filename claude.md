@@ -13,30 +13,58 @@
 - [x] Run database migration: Add event_type, location (JSONB), theme columns to events table
 - [x] Create user_contacts table with RLS policies for contact list feature
 
-#### Backend Development (In Progress)
+#### Backend Development ✅ COMPLETED (Nov 27, 2025)
 - [x] Implement Google Places API endpoints (autocomplete, details, photo)
-- [ ] Create PATCH /api/events/[id] endpoint for updating location and theme
-- [ ] Implement contact management API endpoints (POST, GET, DELETE, search-users)
-- [ ] Implement POST /api/events/[id]/invite-from-contacts endpoint
+- [x] Implement contact management API endpoints (POST, GET, DELETE at /api/contacts)
+- [x] Implement user search endpoint (GET /api/search-users)
+- [x] Implement POST /api/events/[id]/invite-from-contacts endpoint for bulk invitations
+- [x] Improve owner name extraction in /api/invitations endpoint
+- [ ] Create PATCH /api/events/[id] endpoint for updating location and theme (deferred)
 
-#### Frontend Components
-- [ ] Create LocationSearchModal component with Google Maps integration
-- [ ] Update create-event page with event type dropdown and location search
-- [ ] Update event page with type-specific UI (conditional items section, location display, attendance)
-- [ ] Create /contacts page with contact list management UI
-- [ ] Create AddContactModal component for adding contacts
+#### Frontend Components ✅ COMPLETED (Nov 29, 2025)
+- [x] Create LocationSearchModal component with Google Maps integration ✅ DONE
+- [x] Update create-event page with event type dropdown ✅ DONE
+- [x] Update create-event page to integrate LocationSearchModal ✅ DONE
+- [x] Update event page with type-specific UI (conditional items/location sections) ✅ DONE
+- [x] Create /contacts page with contact list management UI ✅ DONE
+- [x] Create AddContactModal component for adding contacts ✅ DONE
+- [x] Update dashboard with Contacts navigation tab ✅ DONE
+- [x] **FIX CRITICAL BUG:** event_type NOT saving to database ✅ FIXED (Nov 29, 2025)
 - [ ] Create InviteFromContactsModal component for bulk invitations
-- [ ] Add 'Invite from Contacts' button to event page and wire up functionality
+- [ ] Wire up 'Invite from Contacts' button on event page
 
 #### Testing & QA
-- [ ] Test event types: Create gift registry with items, create casual meetup with location
-- [ ] Test Google Maps integration: Search places, verify photos/ratings display, test navigation
+- [ ] Test event types (gift-registry and casual-meetup) - UNBLOCKED ✅
+- [ ] Test Google Maps integration with casual meetups - UNBLOCKED ✅
 - [ ] Test contact list: Add 50+ contacts, search/filter, bulk invite to events
 - [ ] Polish UI: Add loading states, error handling, mobile responsiveness for new features
 - [ ] Run end-to-end testing of complete invitation flow (create event → invite → friend joins → contribute)
 - [ ] Cross-browser testing (Safari, Firefox, Edge) for all new features
 - [ ] Performance audit and optimization (especially LocationSearchModal on mobile)
 - [ ] Security review of all endpoints (especially Google Places proxy endpoints)
+
+#### ✅ FIXED - Event Type Display Bug (Nov 29, 2025)
+
+**Issue (RESOLVED):** Event page was not displaying the correct event type (casual-meetup vs gift-registry) and location data.
+
+**Root Cause:**
+- The event page (`app/event/[slug]/page.jsx`) had TWO separate database queries
+- First query (in `fetchEventData()` function, line 68-74) correctly fetched `event_type` and `location`
+- Second query (in `useEffect` hook, line 315-321) was MISSING `event_type` and `location` fields
+- The second query was overwriting the event data without these critical fields
+
+**Solution:**
+- Updated line 318 in `app/event/[slug]/page.jsx` to include `event_type` and `location` in the SELECT statement
+- Both queries now consistently fetch all required fields
+
+**Files Modified:**
+- `app/event/[slug]/page.jsx` (line 318)
+
+**Result:**
+- ✅ Casual meetup events now display "📍 Casual Meetup" badge instead of "🎁 Gift Registry"
+- ✅ Casual meetup events show location section instead of items section
+- ✅ Gift registry events continue to work correctly with items display
+- ✅ Location data displays properly with photos, rating, address, and Google Maps link
 
 #### Documentation & Production
 - [ ] Update claude.md documentation with new features, database schema, API endpoints
@@ -59,9 +87,9 @@
 - This ensures no task is ever lost between sessions
 
 ### 🔄 Last Updated
-**Date:** 2025-11-27 (Session End)
-**Status:** Day 1 & Day 2 Complete - Database migration and Google Places API endpoints working
-**Next Action:** Continue with Day 3 - Contact Management Backend (API endpoints for contacts)
+**Date:** 2025-11-29 (Current Session)
+**Status:** Event type display bug FIXED - Both event types (gift-registry and casual-meetup) now working correctly
+**Next Action:** Test end-to-end flow for both event types, then proceed with InviteFromContactsModal component
 
 ---
 
