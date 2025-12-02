@@ -43,7 +43,7 @@ export async function GET(request) {
     return new NextResponse(imageBuffer, {
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=86400' // Cache for 24 hours
+        'Cache-Control': 'no-cache, no-store, must-revalidate' // Always fetch fresh
       }
     });
 
