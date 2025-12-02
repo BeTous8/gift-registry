@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import supabase from "../../lib/supabase";
 import { useToast } from "../../components/ToastProvider";
+import LocationSearchModal from "../../components/LocationSearchModal";
 
 export default function ViewEventPage() {
   const { slug } = useParams();
@@ -24,6 +25,11 @@ export default function ViewEventPage() {
   const [errorBanner, setErrorBanner] = useState(null);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [paymentVerified, setPaymentVerified] = useState(false);
+
+  // Location editing states
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [newLocation, setNewLocation] = useState(null);
+  const [mounted, setMounted] = useState(false);
 
   // Edit mode states
   const [showAddItem, setShowAddItem] = useState(false);
@@ -48,6 +54,11 @@ export default function ViewEventPage() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteError, setInviteError] = useState("");
   const [copiedInviteLink, setCopiedInviteLink] = useState(false);
+
+  // Add a useEffect to set mounted to true after the initial render
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Fetch event data
   const fetchEventData = async () => {
@@ -166,6 +177,71 @@ export default function ViewEventPage() {
       console.error('Failed to copy invite link:', err);
     }
   };
+
+
+  // ... after handleCopyInviteLink, before verifyPaymentSession
+
+  // Handle updating the event location via API
+  // In app/event/[slug]/page.jsx
+
+  const handleUpdateLocation = async (locationData) => {
+    // 1. CRITICAL CHECK: Ensure event data is loaded
+    if (!event || !event.id) {
+        showToast("Error: Event data is not fully loaded. Cannot update location.", "error");
+        setShowLocationModal(false);
+        return; // Stop execution if event data is missing
+    }
+    
+    // Close the modal immediately for better UX
+    setShowLocationModal(false); 
+    setLoading(true);
+
+    try {
+        // ... (Your existing session and authentication logic)
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !session) {
+            throw new Error('User session not found. Please log in again.');
+        }
+        
+        const authToken = session.access_token;
+        
+        // 2. USE THE VALID ID
+        const response = await fetch(`/api/events/${event.id}`, { 
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`, 
+            },
+            body: JSON.stringify({
+                location: locationData,
+            }),
+        });
+
+        // ... (Rest of your error handling and state update logic)
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || 'Failed to update location.'); 
+        }
+
+        const { event: updatedEvent } = await response.json();
+        
+        setEvent(prevEvent => ({
+            ...prevEvent,
+            location: updatedEvent.location,
+            theme: updatedEvent.theme || prevEvent.theme,
+        }));
+
+        showToast("Location updated successfully!", "success");
+
+    } catch (error) {
+        console.error('Update Location Error:', error);
+        showToast(error.message || "An unknown error occurred while updating location.", "error");
+    } finally {
+        setLoading(false);
+    }
+  };
+  // ...
 
   // Verify payment session
   const verifyPaymentSession = async (sessionId) => {
@@ -397,6 +473,22 @@ export default function ViewEventPage() {
       console.error("Failed to copy:", err);
     }
   };
+
+
+  // ... after handleShare function
+
+  // Location edit handler - opens the modal
+  const handleEditLocation = () => {
+    // Use the existing location as the default value if available
+    if (event?.location) {
+      setNewLocation(event.location);
+    } else {
+      setNewLocation(null);
+    }
+    setShowLocationModal(true);
+  };
+
+  // ... existing Edit mode handlers (handleShowAddItem, handleEditItem, etc.)
 
   // Edit mode handlers
   const handleShowAddItem = () => {
@@ -1026,21 +1118,44 @@ export default function ViewEventPage() {
                       </div>
 
                       {/* Google Maps Link */}
-                      {event.location.geometry && (
-                        <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${event.location.geometry.lat},${event.location.geometry.lng}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block w-full px-4 py-3 bg-gradient-to-r from-green-500 to-blue-600 text-white rounded-lg font-medium hover:from-green-600 hover:to-blue-700 transition text-center"
-                        >
-                          <div className="flex items-center justify-center gap-2">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            Open in Google Maps
-                          </div>
-                        </a>
+                      {/* Location Buttons - Visible only if location data exists */}
+                      {event.location && (
+                        <div className={`mt-6 ${isOwner ? 'flex flex-col sm:flex-row gap-4' : ''}`}>
+                          
+                          {/* Google Maps Link */}
+                          {event.location.geometry && (
+                            <a
+                              // FIX: The URL structure was incorrect. Using the standard maps link.
+                              href={`https://www.google.com/maps/search/?api=1&query=${event.location.geometry.lat},${event.location.geometry.lng}&query_place_id=${event.location.place_id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`inline-block ${isOwner ? 'flex-1' : 'w-full'} px-4 py-3 bg-gradient-to-r from-green-500 to-blue-600 text-white rounded-lg font-medium hover:from-green-600 hover:to-blue-700 transition text-center`}
+                            >
+                              <div className="flex items-center justify-center gap-2">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                Open in Google Maps
+                              </div>
+                            </a>
+                          )}
+
+                          {/* Edit Location Button - Visible only to Owner */}
+                          {isOwner && (
+                            <button
+                              onClick={handleEditLocation} // Use the new function name
+                              className={`inline-block ${!event.location.geometry ? 'w-full' : 'flex-1'} px-4 py-3 border-2 border-gray-400 text-gray-800 rounded-lg font-medium hover:bg-gray-100 transition text-center`}
+                            >
+                              <div className="flex items-center justify-center gap-2">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.232 5.232z" />
+                                </svg>
+                                Edit Location
+                              </div>
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1287,6 +1402,17 @@ export default function ViewEventPage() {
             </div>
           </>
         )}
+        {/* --- Location Search Modal --- */}
+        {mounted && showLocationModal && (
+            <LocationSearchModal
+                // The modal component should be conditionally rendered,
+                // so we don't need to rely on the internal 'isOpen' check.
+                isOpen={true} 
+                onClose={() => setShowLocationModal(false)}
+                onLocationSelected={handleUpdateLocation}
+                initialLocation={event?.location}
+            />
+        )}
       </div>
 
       {/* Invite Modal */}
@@ -1387,6 +1513,7 @@ export default function ViewEventPage() {
           </div>
         </div>
       )}
+      
     </div>
   );
 }
@@ -1537,6 +1664,7 @@ function ContributeModal({ item, onClose }) {
             Cancel
           </button>
         </div>
+        
       </div>
     </div>
   );

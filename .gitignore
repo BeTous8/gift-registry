@@ -42,3 +42,4 @@ EMAIL_DELIVERABILITY_STATUS.md
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.claude/settings.local.json
