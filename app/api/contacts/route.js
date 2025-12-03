@@ -89,18 +89,24 @@ export async function POST(request) {
     // Get contact user details
     const { data: contactDetails } = await supabaseAdmin.auth.admin.getUserById(contactUser.id);
 
+    // Extract first and last names
+    const firstName = contactDetails?.user?.user_metadata?.given_name ||
+                      contactDetails?.user?.user_metadata?.full_name?.split(' ')[0] ||
+                      contactUser.email.split('@')[0];
+
+    const lastName = contactDetails?.user?.user_metadata?.family_name ||
+                     contactDetails?.user?.user_metadata?.full_name?.split(' ').slice(1).join(' ') ||
+                     '';
+
     return NextResponse.json({
       success: true,
       contact: {
         id: contact.id,
         contact_user_id: contactUser.id,
         email: contactUser.email,
-        first_name: contactDetails?.user?.user_metadata?.given_name ||
-                    contactDetails?.user?.user_metadata?.full_name?.split(' ')[0] ||
-                    contactUser.email.split('@')[0],
-        last_name: contactDetails?.user?.user_metadata?.family_name ||
-                   contactDetails?.user?.user_metadata?.full_name?.split(' ').slice(1).join(' ') ||
-                   '',
+        first_name: firstName,
+        last_name: lastName,
+        full_name: `${firstName} ${lastName}`.trim(),
         created_at: contact.created_at
       }
     });

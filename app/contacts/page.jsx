@@ -33,7 +33,7 @@ export default function ContactsPage() {
         }
 
         setUser(session.user);
-        fetchContacts();
+        fetchContacts(session.user.id);
       } catch (error) {
         console.error('Error getting session:', error);
         if (!ignore) {
@@ -51,7 +51,7 @@ export default function ContactsPage() {
         router.replace("/login");
       } else if (session?.user) {
         setUser(session.user);
-        fetchContacts();
+        fetchContacts(session.user.id);
       }
     });
 
@@ -62,8 +62,10 @@ export default function ContactsPage() {
   }, [router]);
 
   // Fetch contacts from API
-  async function fetchContacts() {
-    if (!user?.id) {
+  async function fetchContacts(userId = null) {
+    const userIdToUse = userId || user?.id;
+
+    if (!userIdToUse) {
       setLoading(false);
       return;
     }
@@ -71,7 +73,7 @@ export default function ContactsPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`/api/contacts?userId=${user.id}`);
+      const response = await fetch(`/api/contacts?userId=${userIdToUse}`);
 
       if (!response.ok) {
         console.error('Failed to fetch contacts');

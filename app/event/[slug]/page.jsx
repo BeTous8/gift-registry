@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import supabase from "../../lib/supabase";
 import { useToast } from "../../components/ToastProvider";
 import LocationSearchModal from "../../components/LocationSearchModal";
+import InviteFromContactsModal from "../../components/InviteFromContactsModal";
 
 export default function ViewEventPage() {
   const { slug } = useParams();
@@ -54,6 +55,7 @@ export default function ViewEventPage() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteError, setInviteError] = useState("");
   const [copiedInviteLink, setCopiedInviteLink] = useState(false);
+  const [showInviteFromContactsModal, setShowInviteFromContactsModal] = useState(false);
 
   // Add a useEffect to set mounted to true after the initial render
   useEffect(() => {
@@ -1024,7 +1026,7 @@ export default function ViewEventPage() {
                       </button>
 
                       <button
-                        onClick={() => router.push('/contacts')}
+                        onClick={() => setShowInviteFromContactsModal(true)}
                         className="w-full flex items-center justify-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:bg-purple-700 transition"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1407,10 +1409,24 @@ export default function ViewEventPage() {
             <LocationSearchModal
                 // The modal component should be conditionally rendered,
                 // so we don't need to rely on the internal 'isOpen' check.
-                isOpen={true} 
+                isOpen={true}
                 onClose={() => setShowLocationModal(false)}
                 onLocationSelected={handleUpdateLocation}
                 initialLocation={event?.location}
+            />
+        )}
+
+        {/* --- Invite from Contacts Modal --- */}
+        {mounted && showInviteFromContactsModal && (
+            <InviteFromContactsModal
+                isOpen={true}
+                onClose={() => setShowInviteFromContactsModal(false)}
+                eventId={event?.id}
+                eventTitle={event?.title}
+                onInviteSuccess={(message) => {
+                  showToast(message, 'success');
+                  fetchMembersAndInvitations(event.id, user.id);
+                }}
             />
         )}
       </div>

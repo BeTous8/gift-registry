@@ -1,6 +1,12 @@
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
+
+// Service role client for privileged operations
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 // Helper function to get Resend client (runtime initialization)
 function getResendClient() {
@@ -14,13 +20,22 @@ function getResendClient() {
 // POST - Invite multiple contacts to an event
 export async function POST(request, { params }) {
   try {
-    const supabase = await createClient();
+    // Get authorization header
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Unauthorized - No token provided' },
+        { status: 401 }
+      );
+    }
 
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+    // Verify the JWT token
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !user) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized - Invalid token' },
         { status: 401 }
       );
     }
@@ -36,7 +51,7 @@ export async function POST(request, { params }) {
     }
 
     // Fetch event details and verify ownership
-    const { data: event, error: eventError } = await supabase
+    const { data: event, error: eventError } = await supabaseAdmin
       .from('events')
       .select('id, user_id, title, slug, invite_code')
       .eq('id', eventId)
@@ -57,7 +72,7 @@ export async function POST(request, { params }) {
     }
 
     // Get owner details for email sender name
-    const { data: ownerData } = await supabase.auth.admin.getUserById(user.id);
+    const { data: ownerData } = await supabaseAdmin.auth.admin.getUserById(user.id);
     const ownerMetadata = ownerData?.user?.user_metadata || {};
     const ownerFirstName = ownerMetadata.given_name ||
                           ownerMetadata.full_name?.split(' ')[0] ||
@@ -65,7 +80,7 @@ export async function POST(request, { params }) {
                           'Someone';
 
     // Fetch contacts details
-    const { data: contacts, error: contactsError } = await supabase
+    const { data: contacts, error: contactsError } = await supabaseAdmin
       .from('user_contacts')
       .select('id, contact_user_id')
       .in('id', contact_ids)
@@ -89,7 +104,7 @@ export async function POST(request, { params }) {
     for (const contact of contacts) {
       try {
         // Get contact user details
-        const { data: contactUserData } = await supabase.auth.admin.getUserById(contact.contact_user_id);
+        const { data: contactUserData } = await supabaseAdmin.auth.admin.getUserById(contact.contact_user_id);
         const contactUser = contactUserData?.user;
 
         if (!contactUser || !contactUser.email) {
@@ -101,7 +116,7 @@ export async function POST(request, { params }) {
         }
 
         // Check if already a member
-        const { data: existingMember } = await supabase
+        const { data: existingMember } = await supabaseAdmin
           .from('event_members')
           .select('id')
           .eq('event_id', eventId)
@@ -117,7 +132,7 @@ export async function POST(request, { params }) {
         }
 
         // Check if already invited
-        const { data: existingInvite } = await supabase
+        const { data: existingInvite } = await supabaseAdmin
           .from('event_invitations')
           .select('id, status')
           .eq('event_id', eventId)
@@ -136,7 +151,7 @@ export async function POST(request, { params }) {
         let invitation;
         if (existingInvite) {
           // Update existing invitation to pending
-          const { data: updated, error: updateError } = await supabase
+          const { data: updated, error: updateError } = await supabaseAdmin
             .from('event_invitations')
             .update({
               status: 'pending',
@@ -158,7 +173,7 @@ export async function POST(request, { params }) {
           invitation = updated;
         } else {
           // Create new invitation
-          const { data: created, error: createError } = await supabase
+          const { data: created, error: createError } = await supabaseAdmin
             .from('event_invitations')
             .insert({
               event_id: eventId,
