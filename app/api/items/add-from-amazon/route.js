@@ -33,6 +33,24 @@ export async function POST(request) {
       )
     }
 
+    // Extract product ID and clean the URL to avoid bot detection
+    // This handles URLs like:
+    // - https://www.amazon.com/dp/B0DNQ95NKY
+    // - https://www.amazon.com/product-name/dp/B0DNQ95NKY/ref=...
+    // - https://a.co/d/fK61pxf (will redirect to clean URL)
+    let cleanUrl = productLink
+
+    // If it's a full amazon.com URL with a product ID, extract and clean it
+    if (productLink.includes('amazon.com')) {
+      const productIdMatch = productLink.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/)
+      if (productIdMatch) {
+        const productId = productIdMatch[1]
+        cleanUrl = `https://www.amazon.com/dp/${productId}`
+        console.log('Cleaned URL from', productLink, 'to', cleanUrl)
+      }
+    }
+    // For short links (a.co, amzn.to), axios will follow redirects automatically
+
     // Verify the event exists and user is the owner
     const { data: event, error: eventError } = await supabase
       .from('events')
@@ -55,12 +73,12 @@ export async function POST(request) {
     }
 
     // Scrape Amazon product data
-    console.log('Fetching Amazon product page:', productLink)
+    console.log('Fetching Amazon product page:', cleanUrl)
 
     // Add random delay to avoid bot detection (200-800ms)
     await new Promise(resolve => setTimeout(resolve, Math.random() * 600 + 200))
 
-    const response = await axios.get(productLink, {
+    const response = await axios.get(cleanUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
@@ -87,9 +105,12 @@ export async function POST(request) {
     })
 
     // Log the final URL after redirects
-    const finalUrl = response.request?.res?.responseUrl || productLink
+    const finalUrl = response.request?.res?.responseUrl || cleanUrl
+    console.log('Original URL:', productLink)
+    console.log('Cleaned URL:', cleanUrl)
     console.log('Final URL after redirects:', finalUrl)
     console.log('Response status:', response.status)
+    console.log('Response body length:', response.data?.length || 0)
 
     const html = response.data
     const $ = cheerio.load(html)
@@ -124,24 +145,23 @@ export async function POST(request) {
     }
 
     // Extract price (try multiple selectors as Amazon changes them frequently)
+    // Priority: buybox price > feature price > any price
     let priceText = ''
 
-    // Try offscreen price first (most reliable)
-    priceText = $('.a-price .a-offscreen').first().text().trim()
+    // 1. Try buybox price (most reliable for main product price)
+    priceText = $('#corePriceDisplay_desktop_feature_div .a-price .a-offscreen').first().text().trim()
 
-    // Try whole + fraction price format
+    // 2. Try apex price (newer Amazon layout)
     if (!priceText) {
-      const priceWhole = $('.a-price-whole').first().text().trim()
-      const priceFraction = $('.a-price-fraction').first().text().trim()
-      if (priceWhole) {
-        priceText = priceWhole + (priceFraction || '00')
-      }
+      priceText = $('.a-price.aok-align-center .a-offscreen').first().text().trim()
     }
 
-    // Try alternate price locations
+    // 3. Try main price block in buybox area
     if (!priceText) {
-      priceText = $('span.a-price span.a-offscreen').first().text().trim()
+      priceText = $('#corePrice_feature_div .a-price .a-offscreen').first().text().trim()
     }
+
+    // 4. Try old buybox selectors
     if (!priceText) {
       priceText = $('#priceblock_ourprice').text().trim()
     }
@@ -151,12 +171,32 @@ export async function POST(request) {
     if (!priceText) {
       priceText = $('#price_inside_buybox').text().trim()
     }
+
+    // 5. Try whole + fraction price format in feature div
+    if (!priceText) {
+      const priceWhole = $('#corePriceDisplay_desktop_feature_div .a-price-whole').first().text().trim()
+      const priceFraction = $('#corePriceDisplay_desktop_feature_div .a-price-fraction').first().text().trim()
+      if (priceWhole) {
+        priceText = priceWhole + (priceFraction || '00')
+      }
+    }
+
+    // 6. Last resort: any price (less reliable, might pick up bundles/variants)
+    if (!priceText) {
+      priceText = $('.a-price .a-offscreen').first().text().trim()
+    }
+    if (!priceText) {
+      priceText = $('span.a-price span.a-offscreen').first().text().trim()
+    }
     if (!priceText) {
       priceText = $('.a-price-range .a-price .a-offscreen').first().text().trim()
     }
     if (!priceText) {
       priceText = $('[data-a-color="price"] .a-offscreen').first().text().trim()
     }
+
+    // Log which price we found
+    console.log('Price found:', priceText || 'NONE')
 
     // Parse price to cents
     let priceCents = 0
@@ -166,6 +206,7 @@ export async function POST(request) {
       if (priceMatch) {
         const priceNumber = parseFloat(priceMatch[0].replace(/,/g, ''))
         priceCents = Math.round(priceNumber * 100)
+        console.log('Parsed price to cents:', priceCents)
       }
     }
 
