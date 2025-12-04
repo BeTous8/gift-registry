@@ -8,6 +8,7 @@ import supabase from "../../lib/supabase";
 import { useToast } from "../../components/ToastProvider";
 import LocationSearchModal from "../../components/LocationSearchModal";
 import InviteFromContactsModal from "../../components/InviteFromContactsModal";
+import AddItemModal from "../../components/AddItemModal";
 
 export default function ViewEventPage() {
   const { slug } = useParams();
@@ -33,12 +34,12 @@ export default function ViewEventPage() {
   const [mounted, setMounted] = useState(false);
 
   // Edit mode states
-  const [showAddItem, setShowAddItem] = useState(false);
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [editingItemId, setEditingItemId] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
 
-  // Item form fields
+  // Edit item form fields (for inline editing)
   const [itemTitle, setItemTitle] = useState("");
   const [itemPrice, setItemPrice] = useState("");
   const [itemProductLink, setItemProductLink] = useState("");
@@ -492,22 +493,14 @@ export default function ViewEventPage() {
 
   // ... existing Edit mode handlers (handleShowAddItem, handleEditItem, etc.)
 
-  // Edit mode handlers
-  const handleShowAddItem = () => {
-    setShowAddItem((val) => !val);
-    setEditingItemId(null);
-    setItemError("");
-    setItemLoading(false); // Reset loading state
-    // Reset form when toggling
-    setItemTitle("");
-    setItemPrice("");
-    setItemProductLink("");
-    setItemImageUrl("");
+  // Callback when item is added from modal
+  const handleItemAdded = (newItem) => {
+    setItems((prev) => [...prev, newItem]);
+    showToast('Item added successfully!', 'success');
   };
 
   const handleEditItem = (item) => {
     setEditingItemId(item.id);
-    setShowAddItem(false);
     setItemTitle(item.title);
     setItemPrice((item.price_cents / 100).toFixed(2));
     setItemProductLink(item.product_link || "");
@@ -522,84 +515,6 @@ export default function ViewEventPage() {
     setItemProductLink("");
     setItemImageUrl("");
     setItemError("");
-  };
-
-  // Add item
-  const handleAddItem = async (e) => {
-    e.preventDefault();
-    setItemError("");
-    setItemLoading(true);
-
-    // Validation
-    if (!itemTitle.trim()) {
-      setItemError("Title is required.");
-      setItemLoading(false);
-      return;
-    }
-    const priceNum = Number(itemPrice);
-    if (Number.isNaN(priceNum) || priceNum < 0.01) {
-      setItemError("Valid price is required.");
-      setItemLoading(false);
-      return;
-    }
-    if (itemProductLink && itemProductLink.length > 0) {
-      try {
-        new URL(itemProductLink);
-      } catch {
-        setItemError("Product link must be a valid URL.");
-        setItemLoading(false);
-        return;
-      }
-    }
-    if (itemImageUrl && itemImageUrl.length > 0) {
-      try {
-        new URL(itemImageUrl);
-      } catch {
-        setItemError("Image URL must be a valid URL.");
-        setItemLoading(false);
-        return;
-      }
-    }
-
-    // Insert into db
-    const { data, error: insertError } = await supabase
-      .from("items")
-      .insert({
-        event_id: event.id,
-        title: itemTitle.trim(),
-        price_cents: Math.round(Number(itemPrice) * 100), // USD to cents
-        product_link: itemProductLink.trim() || null,
-        image_url: itemImageUrl.trim() || null,
-        current_amount_cents: 0,
-      })
-      .select()
-      .single();
-
-    setItemLoading(false);
-
-    if (insertError) {
-      // Provide more helpful error message for RLS policy issues
-      if (insertError.message?.includes("row-level security policy")) {
-        setItemError(
-          "Permission denied. Please ensure you have the correct database policies set up. " +
-          "The items table needs an RLS policy that allows users to insert items for events they own."
-        );
-      } else {
-        setItemError(insertError.message || "Failed to add item.");
-      }
-      return;
-    }
-
-    // Refresh items list
-    setItems((prev) => [...prev, data]);
-    // Reset form fields
-    setItemTitle("");
-    setItemPrice("");
-    setItemProductLink("");
-    setItemImageUrl("");
-    setItemError("");
-    // Close form
-    setShowAddItem(false);
   };
 
   // Update item
@@ -1166,119 +1081,121 @@ export default function ViewEventPage() {
                 {/* Items Grid - only for gift registries (or old events without event_type) */}
                 {(event.event_type !== 'casual-meetup') && (
                   <>
-                    {/* Add Item Form - shown for owners */}
-                    {isOwner && (
+                    {/* Add Item Button - shown for owners */}
+                    {isOwner && !editingItemId && (
                   <div className="mb-6 bg-white rounded-lg shadow-md p-6 border-2 border-blue-200">
-                    {!showAddItem && !editingItemId && (
                       <button
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition"
-                        onClick={handleShowAddItem}
+                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-lg hover:from-blue-700 hover:to-purple-700 transition shadow-lg"
+                        onClick={() => setShowAddItemModal(true)}
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
-                        Add Item
+                        Quick Add (Amazon Link)
                       </button>
-                    )}
-                {(showAddItem || editingItemId) && (
-                  <div className="bg-gray-50 rounded-md p-4 border border-gray-200">
-                    <h4 className="font-semibold mb-3 text-gray-800">
-                      {editingItemId ? "Edit Item" : "Add New Item"}
-                    </h4>
-                    <form onSubmit={editingItemId ? handleUpdateItem : handleAddItem} className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1" htmlFor="item-title">
-                          Item Title <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          id="item-title"
-                          type="text"
-                          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200"
-                          value={itemTitle}
-                          onChange={(e) => setItemTitle(e.target.value)}
-                          required
-                          disabled={itemLoading}
-                          placeholder="Title of the item"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1" htmlFor="item-price">
-                          Price (USD) <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          id="item-price"
-                          type="number"
-                          min="0.01"
-                          step="0.01"
-                          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200"
-                          value={itemPrice}
-                          onChange={(e) => setItemPrice(e.target.value)}
-                          required
-                          disabled={itemLoading}
-                          placeholder="e.g. 50.00"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1" htmlFor="item-link">
-                          Product Link
-                        </label>
-                        <input
-                          id="item-link"
-                          type="text"
-                          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200"
-                          value={itemProductLink}
-                          onChange={(e) => setItemProductLink(e.target.value)}
-                          disabled={itemLoading}
-                          placeholder="https://example.com"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1" htmlFor="item-img">
-                          Image URL
-                        </label>
-                        <input
-                          id="item-img"
-                          type="text"
-                          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200"
-                          value={itemImageUrl}
-                          onChange={(e) => setItemImageUrl(e.target.value)}
-                          disabled={itemLoading}
-                          placeholder="https://example.com/image.jpg"
-                        />
-                      </div>
-                      {itemError && (
-                        <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
-                          {itemError}
-                        </div>
-                      )}
-                      <div className="flex gap-2 mt-2">
-                        <button
-                          type="submit"
-                          className="bg-blue-600 text-white px-4 py-2 rounded font-semibold hover:bg-blue-700 transition disabled:opacity-50"
-                          disabled={itemLoading}
-                        >
-                          {itemLoading
-                            ? editingItemId
-                              ? "Updating..."
-                              : "Adding..."
-                            : editingItemId
-                            ? "Update Item"
-                            : "Add Item"}
-                        </button>
-                        <button
-                          type="button"
-                          className="bg-gray-300 text-gray-700 px-4 py-2 rounded font-semibold hover:bg-gray-400 transition"
-                          onClick={editingItemId ? handleCancelEdit : handleShowAddItem}
-                          disabled={itemLoading}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                )}
               </div>
             )}
+
+                    {/* Edit Item Form - shown when editing */}
+                    {isOwner && editingItemId && (
+                      <div className="mb-6 bg-white rounded-lg shadow-md p-6 border-2 border-blue-200">
+                        <div className="bg-gray-50 rounded-md p-4 border border-gray-200">
+                          <h4 className="font-semibold mb-3 text-gray-800">
+                            Edit Item
+                          </h4>
+                          <form onSubmit={handleUpdateItem} className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium mb-1" htmlFor="item-title">
+                                Item Title <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                id="item-title"
+                                type="text"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200"
+                                value={itemTitle}
+                                onChange={(e) => setItemTitle(e.target.value)}
+                                required
+                                disabled={itemLoading}
+                                placeholder="Title of the item"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1" htmlFor="item-price">
+                                Price (USD) <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                id="item-price"
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200"
+                                value={itemPrice}
+                                onChange={(e) => setItemPrice(e.target.value)}
+                                required
+                                disabled={itemLoading}
+                                placeholder="e.g. 50.00"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1" htmlFor="item-link">
+                                Product Link
+                              </label>
+                              <input
+                                id="item-link"
+                                type="text"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200"
+                                value={itemProductLink}
+                                onChange={(e) => setItemProductLink(e.target.value)}
+                                disabled={itemLoading}
+                                placeholder="https://example.com"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1" htmlFor="item-img">
+                                Image URL
+                              </label>
+                              <input
+                                id="item-img"
+                                type="text"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200"
+                                value={itemImageUrl}
+                                onChange={(e) => setItemImageUrl(e.target.value)}
+                                disabled={itemLoading}
+                                placeholder="https://example.com/image.jpg"
+                              />
+                            </div>
+                            {itemError && (
+                              <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
+                                {itemError}
+                              </div>
+                            )}
+                            <div className="flex gap-2 mt-2">
+                              <button
+                                type="submit"
+                                className="bg-blue-600 text-white px-4 py-2 rounded font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+                                disabled={itemLoading}
+                              >
+                                {itemLoading
+                                  ? editingItemId
+                                    ? "Updating..."
+                                    : "Adding..."
+                                  : editingItemId
+                                  ? "Update Item"
+                                  : "Add Item"}
+                              </button>
+                              <button
+                                type="button"
+                                className="bg-gray-300 text-gray-700 px-4 py-2 rounded font-semibold hover:bg-gray-400 transition"
+                                onClick={handleCancelEdit}
+                                disabled={itemLoading}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    )}
 
                 <div className="grid gap-6 md:grid-cols-2">
                   {items.length === 0 ? (
@@ -1365,14 +1282,14 @@ export default function ViewEventPage() {
                                 <div className="flex gap-2 w-full">
                                   <button
                                     onClick={() => handleEditItem(item)}
-                                    disabled={itemLoading || editingItemId === item.id || showAddItem}
+                                    disabled={itemLoading || editingItemId === item.id}
                                     className="flex-1 bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-2 rounded font-semibold text-sm transition disabled:opacity-50"
                                   >
                                     Edit
                                   </button>
                                   <button
                                     onClick={() => handleDeleteClick(item)}
-                                    disabled={itemLoading || editingItemId === item.id || showAddItem}
+                                    disabled={itemLoading || editingItemId === item.id}
                                     className="flex-1 bg-red-100 text-red-700 hover:bg-red-200 px-3 py-2 rounded font-semibold text-sm transition disabled:opacity-50"
                                   >
                                     Delete
@@ -1420,13 +1337,24 @@ export default function ViewEventPage() {
         {mounted && showInviteFromContactsModal && (
             <InviteFromContactsModal
                 isOpen={true}
-                onClose={() => setShowInviteFromContactsModal(false)}
+                onClose={() => setShowInviteModal(false)}
                 eventId={event?.id}
                 eventTitle={event?.title}
                 onInviteSuccess={(message) => {
                   showToast(message, 'success');
                   fetchMembersAndInvitations(event.id, user.id);
                 }}
+            />
+        )}
+
+        {/* --- Add Item Modal --- */}
+        {mounted && showAddItemModal && (
+            <AddItemModal
+                isOpen={true}
+                onClose={() => setShowAddItemModal(false)}
+                eventId={event?.id}
+                userId={user?.id}
+                onItemAdded={handleItemAdded}
             />
         )}
       </div>
