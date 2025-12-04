@@ -186,7 +186,7 @@ export default function AddItemModal({ isOpen, onClose, eventId, userId, onItemA
               className={`flex-1 px-6 py-4 font-semibold transition ${
                 activeTab === 'automatic'
                   ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                  : 'bg-white text-gray-800 hover:bg-gray-50'
               }`}
               disabled={loading}
             >
@@ -202,7 +202,7 @@ export default function AddItemModal({ isOpen, onClose, eventId, userId, onItemA
               className={`flex-1 px-6 py-4 font-semibold transition ${
                 activeTab === 'manual'
                   ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                  : 'bg-white text-gray-800 hover:bg-gray-50'
               }`}
               disabled={loading}
             >
@@ -251,7 +251,7 @@ export default function AddItemModal({ isOpen, onClose, eventId, userId, onItemA
                   disabled={loading}
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-700 mt-1">
                   Example: https://www.amazon.com/Apple-AirPods-Pro/dp/B0CHWRXH8B
                 </p>
               </div>

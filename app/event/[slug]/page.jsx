@@ -47,6 +47,11 @@ export default function ViewEventPage() {
   const [itemLoading, setItemLoading] = useState(false);
   const [itemError, setItemError] = useState("");
 
+  // Delete member states
+  const [deleteMemberDialogOpen, setDeleteMemberDialogOpen] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState(null);
+  const [deletingMember, setDeletingMember] = useState(false);
+
   // Members and invitations states
   const [members, setMembers] = useState([]);
   const [invitations, setInvitations] = useState([]);
@@ -750,7 +755,7 @@ export default function ViewEventPage() {
                 {event.description ? (
                   <div>{event.description}</div>
                 ) : (
-                  <span className="italic text-gray-600">No description.</span>
+                  <span className="italic text-gray-800">No description.</span>
                 )}
               </div>
               {/* Event type badge */}
@@ -837,21 +842,36 @@ export default function ViewEventPage() {
                   {members.length > 0 && (
                     <div className="space-y-2 mb-4">
                       {members.map((member) => (
-                        <div key={member.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                        <div key={member.id} className="group flex items-center gap-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
                           <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                             {member.name?.charAt(0)?.toUpperCase() || '?'}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-800 text-sm truncate">{member.name}</p>
-                            <p className="text-xs text-gray-500">Member</p>
+                            <p className="text-xs text-gray-700">Member</p>
                           </div>
+                          {isOwner && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMemberToDelete(member);
+                                setDeleteMemberDialogOpen(true);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 p-1"
+                              title="Remove member"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
                   )}
 
                   {members.length === 0 && !eventOwner && (
-                    <p className="text-gray-500 text-sm mb-4">No members yet</p>
+                    <p className="text-gray-700 text-sm mb-4">No members yet</p>
                   )}
 
                   {/* Pending Invitations (Owner only) */}
@@ -1013,7 +1033,7 @@ export default function ViewEventPage() {
                             {[...Array(5)].map((_, i) => (
                               <svg
                                 key={i}
-                                className={`w-5 h-5 ${i < Math.floor(event.location.rating) ? 'text-yellow-400' : 'text-gray-300'}`}
+                                className={`w-5 h-5 ${i < Math.floor(event.location.rating) ? 'text-yellow-400' : 'text-gray-700'}`}
                                 fill="currentColor"
                                 viewBox="0 0 20 20"
                               >
@@ -1027,7 +1047,7 @@ export default function ViewEventPage() {
 
                       {/* Address */}
                       <div className="flex items-start gap-2 mb-4">
-                        <svg className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 text-gray-800 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
@@ -1223,7 +1243,7 @@ export default function ViewEventPage() {
                               />
                             </div>
                           ) : (
-                            <div className="h-44 flex items-center justify-center bg-gray-100 rounded-t-lg text-gray-500 text-5xl">
+                            <div className="h-44 flex items-center justify-center bg-gray-100 rounded-t-lg text-gray-700 text-5xl">
                               <span className="material-symbols-outlined">image</span>
                             </div>
                           )}
@@ -1425,17 +1445,17 @@ export default function ViewEventPage() {
 
       {/* Delete Confirmation Dialog */}
       {deleteDialogOpen && itemToDelete && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
           onClick={handleCloseDeleteDialog}
         >
-          <div 
+          <div
             className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-xl font-bold text-gray-800 mb-2">Delete Item</h3>
-            <p className="text-gray-600 mb-4">
-              Are you sure you want to delete <span className="font-semibold">"{itemToDelete.title}"</span>? 
+            <p className="text-gray-800 mb-4">
+              Are you sure you want to delete <span className="font-semibold">"{itemToDelete.title}"</span>?
               This action cannot be undone.
             </p>
             <div className="flex gap-3 justify-end">
@@ -1457,7 +1477,75 @@ export default function ViewEventPage() {
           </div>
         </div>
       )}
-      
+
+      {/* Delete Member Confirmation Dialog */}
+      {deleteMemberDialogOpen && memberToDelete && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => {
+            setDeleteMemberDialogOpen(false);
+            setMemberToDelete(null);
+          }}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Remove Member</h3>
+            <p className="text-gray-800 mb-4">
+              Are you sure you want to remove <span className="font-semibold">{memberToDelete.name}</span> from this event?
+              They will no longer have access to the event.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setDeleteMemberDialogOpen(false);
+                  setMemberToDelete(null);
+                }}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded font-semibold hover:bg-gray-300 transition"
+                disabled={deletingMember}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!memberToDelete) return;
+                  setDeletingMember(true);
+                  try {
+                    const res = await fetch(`/api/events/${event.id}/members`, {
+                      method: 'DELETE',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        userId: user.id,
+                        memberUserId: memberToDelete.user_id
+                      })
+                    });
+                    if (res.ok) {
+                      setMembers(members.filter(m => m.id !== memberToDelete.id));
+                      showToast('Member removed successfully', 'success');
+                    } else {
+                      const data = await res.json();
+                      showToast(data.error || 'Failed to remove member', 'error');
+                    }
+                  } catch (err) {
+                    console.error('Error removing member:', err);
+                    showToast('Error removing member', 'error');
+                  } finally {
+                    setDeletingMember(false);
+                    setDeleteMemberDialogOpen(false);
+                    setMemberToDelete(null);
+                  }
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded font-semibold hover:bg-red-700 transition disabled:opacity-50"
+                disabled={deletingMember}
+              >
+                {deletingMember ? "Removing..." : "Remove"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -1521,7 +1609,7 @@ function ContributeModal({ item, onClose }) {
           <h3 className="text-2xl font-bold text-gray-900">Contribute</h3>
           <button
             onClick={onClose}
-            className="text-gray-600 hover:text-gray-800 text-2xl leading-none"
+            className="text-gray-800 hover:text-gray-800 text-2xl leading-none"
           >
             ×
           </button>

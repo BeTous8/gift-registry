@@ -83,7 +83,7 @@ function Toast({ id, message, type, onClose }) {
       <div className="flex-1 text-sm font-medium">{message}</div>
       <button
         onClick={onClose}
-        className="flex-shrink-0 text-gray-400 hover:text-gray-600 font-bold text-lg leading-none"
+        className="flex-shrink-0 text-gray-800 hover:text-gray-800 font-bold text-lg leading-none"
         aria-label="Close"
       >
         ×

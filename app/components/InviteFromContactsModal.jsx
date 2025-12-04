@@ -189,7 +189,7 @@ export default function InviteFromContactsModal({ isOpen, onClose, eventId, even
             </h2>
             <button
               onClick={onClose}
-              className="p-2 rounded-md hover:bg-gray-100 text-gray-600 transition"
+              className="p-2 rounded-md hover:bg-gray-100 text-gray-800 transition"
               aria-label="Close modal"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -198,7 +198,7 @@ export default function InviteFromContactsModal({ isOpen, onClose, eventId, even
             </button>
           </div>
 
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-gray-800 mb-4">
             Select contacts to invite to <span className="font-semibold">{eventTitle}</span>
           </p>
 
@@ -214,7 +214,7 @@ export default function InviteFromContactsModal({ isOpen, onClose, eventId, even
                   return selectedContactIds.size === selectableCount ? "Deselect All" : "Select All";
                 })()}
               </button>
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-800">
                 {selectedContactIds.size} of {contacts.filter(c => !invitedEmails.has(c.email?.toLowerCase())).length} selected
               </span>
             </div>
@@ -235,8 +235,8 @@ export default function InviteFromContactsModal({ isOpen, onClose, eventId, even
               <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
             </div>
           ) : contacts.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <svg className="w-16 h-16 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-center py-8 text-gray-700">
+              <svg className="w-16 h-16 mx-auto mb-3 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               <p className="font-medium mb-2">No contacts yet</p>
@@ -299,12 +299,12 @@ export default function InviteFromContactsModal({ isOpen, onClose, eventId, even
                     {/* Contact Info */}
                     <div className="flex-1 min-w-0">
                       <p className={`font-medium truncate ${
-                        isAlreadyInvited ? "text-gray-500" : "text-gray-800"
+                        isAlreadyInvited ? "text-gray-700" : "text-gray-800"
                       }`}>
                         {contact.full_name || contact.email}
                       </p>
                       <p className={`text-sm truncate ${
-                        isAlreadyInvited ? "text-gray-400" : "text-gray-600"
+                        isAlreadyInvited ? "text-gray-800" : "text-gray-800"
                       }`}>
                         {contact.email}
                       </p>
@@ -312,7 +312,7 @@ export default function InviteFromContactsModal({ isOpen, onClose, eventId, even
 
                     {/* Already Invited Badge */}
                     {isAlreadyInvited && (
-                      <span className="text-xs text-gray-500 bg-gray-200 px-3 py-1 rounded-full whitespace-nowrap">
+                      <span className="text-xs text-gray-700 bg-gray-200 px-3 py-1 rounded-full whitespace-nowrap">
                         Already invited
                       </span>
                     )}

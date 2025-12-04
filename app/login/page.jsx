@@ -283,7 +283,7 @@ export default function LoginPage() {
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">OR</span>
+                <span className="px-2 bg-white text-gray-700">OR</span>
               </div>
             </div>
 
@@ -315,7 +315,7 @@ export default function LoginPage() {
                   resetForm();
                   setSelectedMethod(null);
                 }}
-                className="text-gray-600 hover:text-gray-800"
+                className="text-gray-800 hover:text-gray-800"
               >
                 ← Back
               </button>
@@ -339,7 +339,7 @@ export default function LoginPage() {
                     disabled={loading}
                     placeholder="+1234567890"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-700 mt-1">
                     Include country code (e.g., +1 for US)
                   </p>
                 </div>
@@ -393,7 +393,7 @@ export default function LoginPage() {
                       setOtpCode("");
                       setError("");
                     }}
-                    className="w-full text-gray-600 py-2 text-sm hover:text-gray-800"
+                    className="w-full text-gray-800 py-2 text-sm hover:text-gray-800"
                     disabled={loading}
                   >
                     Resend Code
@@ -414,7 +414,7 @@ export default function LoginPage() {
                   resetForm();
                   setSelectedMethod(null);
                 }}
-                className="text-gray-600 hover:text-gray-800"
+                className="text-gray-800 hover:text-gray-800"
               >
                 ← Back
               </button>
@@ -457,7 +457,7 @@ export default function LoginPage() {
                   maxLength="20"
                   minLength="3"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-700 mt-1">
                   3-20 characters, letters, numbers, underscores, and hyphens only
                 </p>
               </div>
@@ -479,7 +479,7 @@ export default function LoginPage() {
                 placeholder={authMode === "signin" ? "Enter your password" : "Create a password"}
               />
               {authMode === "signup" && (
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-700 mt-1">
                   Must be at least 6 characters
                 </p>
               )}
@@ -536,7 +536,7 @@ export default function LoginPage() {
         )}
 
         {loading && selectedMethod === null && (
-          <div className="text-center text-gray-600 text-sm mt-4">
+          <div className="text-center text-gray-800 text-sm mt-4">
             Redirecting to {authMode === "signin" ? "sign in" : "sign up"}...
           </div>
         )}

@@ -162,7 +162,7 @@ export default function ContactsPage() {
             <div className="flex items-center gap-4">
               <Link
                 href="/dashboard"
-                className="p-2 rounded-md hover:bg-purple-50 text-gray-600 hover:text-purple-700 transition"
+                className="p-2 rounded-md hover:bg-purple-50 text-gray-800 hover:text-purple-700 transition"
                 aria-label="Back to dashboard"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -173,7 +173,7 @@ export default function ContactsPage() {
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
                   My Contacts
                 </h1>
-                <p className="text-sm text-gray-600">{contacts.length} contact{contacts.length !== 1 ? 's' : ''}</p>
+                <p className="text-sm text-gray-800">{contacts.length} contact{contacts.length !== 1 ? 's' : ''}</p>
               </div>
             </div>
             <button
@@ -203,7 +203,7 @@ export default function ContactsPage() {
                 className="w-full px-4 py-3 pl-11 bg-white/80 backdrop-blur-sm border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent shadow-sm"
               />
               <svg
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-800"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -233,7 +233,7 @@ export default function ContactsPage() {
             <h2 className="text-2xl font-bold text-gray-800 mb-3">
               {searchQuery ? "No contacts found" : "No contacts yet"}
             </h2>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            <p className="text-gray-800 mb-6 max-w-md mx-auto">
               {searchQuery
                 ? "Try adjusting your search query."
                 : "Add contacts to quickly invite them to your events."}
@@ -272,7 +272,7 @@ export default function ContactsPage() {
                   {/* Delete Button */}
                   <button
                     onClick={() => handleDeleteClick(contact)}
-                    className="absolute top-3 right-3 bg-white/90 hover:bg-red-500 text-gray-500 hover:text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg transition-all shadow-md z-10 opacity-0 group-hover:opacity-100"
+                    className="absolute top-3 right-3 bg-white/90 hover:bg-red-500 text-gray-700 hover:text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg transition-all shadow-md z-10 opacity-0 group-hover:opacity-100"
                     title="Remove contact"
                     disabled={deletingContactId === contact.id}
                   >
@@ -290,13 +290,13 @@ export default function ContactsPage() {
                       <h3 className="text-lg font-bold text-gray-800 truncate">
                         {contact.full_name || contact.email}
                       </h3>
-                      <p className="text-sm text-gray-600 truncate">{contact.email}</p>
+                      <p className="text-sm text-gray-800 truncate">{contact.email}</p>
                     </div>
                   </div>
 
                   {/* Date Added */}
                   <div className="pt-3 border-t border-white/50">
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-gray-800">
                       Added {new Date(contact.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
                   </div>
@@ -327,7 +327,7 @@ export default function ContactsPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-xl font-bold text-gray-800 mb-2">Remove Contact</h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-800 mb-4">
               Are you sure you want to remove <span className="font-semibold">{contactToDelete.full_name || contactToDelete.email}</span> from your contacts?
             </p>
             <div className="flex gap-3 justify-end">

@@ -76,7 +76,7 @@ export default function LandingPage() {
             </span>
           </h1>
           
-          <p className="text-xl md:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto font-light leading-relaxed">
+          <p className="text-xl md:text-2xl text-gray-800 mb-10 max-w-3xl mx-auto font-light leading-relaxed">
             Curate wishlists from anywhere. Let friends contribute together. 
             Receive gifts you'll actually love—no duplicates, no regrets.
           </p>
@@ -97,7 +97,7 @@ export default function LandingPage() {
             </Link>
           </div>
           
-          <p className="text-sm text-gray-500 font-medium mb-16">
+          <p className="text-sm text-gray-700 font-medium mb-16">
             Free forever • No credit card required • Set up in minutes
           </p>
         </div>
@@ -114,7 +114,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <h4 className="font-bold text-gray-900 mb-2">Add Any Item</h4>
-              <p className="text-sm text-gray-600 leading-relaxed">From any store, anywhere online</p>
+              <p className="text-sm text-gray-800 leading-relaxed">From any store, anywhere online</p>
             </div>
             <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-100 transform hover:scale-105 transition-transform">
               <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-400 to-pink-400 mb-4 flex items-center justify-center">
@@ -123,7 +123,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <h4 className="font-bold text-gray-900 mb-2">Group Gifting</h4>
-              <p className="text-sm text-gray-600 leading-relaxed">Friends contribute together</p>
+              <p className="text-sm text-gray-800 leading-relaxed">Friends contribute together</p>
             </div>
             <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-100 transform hover:scale-105 transition-transform">
               <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-pink-400 to-rose-400 mb-4 flex items-center justify-center">
@@ -132,7 +132,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <h4 className="font-bold text-gray-900 mb-2">Get What You Want</h4>
-              <p className="text-sm text-gray-600 leading-relaxed">No duplicates, no regrets</p>
+              <p className="text-sm text-gray-800 leading-relaxed">No duplicates, no regrets</p>
             </div>
           </div>
         </div>
@@ -147,7 +147,7 @@ export default function LandingPage() {
                 How It Works
               </span>
             </h2>
-            <p className="text-xl text-gray-600 font-light max-w-2xl mx-auto">
+            <p className="text-xl text-gray-800 font-light max-w-2xl mx-auto">
               Three simple steps to transform how you receive gifts
             </p>
           </div>
@@ -161,7 +161,7 @@ export default function LandingPage() {
                   <span className="text-white text-2xl font-bold">1</span>
                 </div>
                 <h3 className="text-2xl font-bold mb-4 text-gray-900">Create Your Event</h3>
-                <p className="text-gray-600 leading-relaxed font-light">
+                <p className="text-gray-800 leading-relaxed font-light">
                   Add items from any store, create cash funds, or let our AI suggest perfect gifts based on your interests and preferences.
                 </p>
               </div>
@@ -175,7 +175,7 @@ export default function LandingPage() {
                   <span className="text-white text-2xl font-bold">2</span>
                 </div>
                 <h3 className="text-2xl font-bold mb-4 text-gray-900">Share Your Link</h3>
-                <p className="text-gray-600 leading-relaxed font-light">
+                <p className="text-gray-800 leading-relaxed font-light">
                   Send your beautiful registry page to friends and family via text, email, or social media. They'll love how easy it is to contribute.
                 </p>
               </div>
@@ -189,7 +189,7 @@ export default function LandingPage() {
                   <span className="text-white text-2xl font-bold">3</span>
                 </div>
                 <h3 className="text-2xl font-bold mb-4 text-gray-900">Receive & Celebrate</h3>
-                <p className="text-gray-600 leading-relaxed font-light">
+                <p className="text-gray-800 leading-relaxed font-light">
                   Watch contributions come in real-time. Get the funds directly to buy exactly what you want, when you want it.
                 </p>
               </div>
@@ -207,7 +207,7 @@ export default function LandingPage() {
                 Why Choose Memora?
               </span>
             </h2>
-            <p className="text-xl text-gray-600 font-light max-w-2xl mx-auto">
+            <p className="text-xl text-gray-800 font-light max-w-2xl mx-auto">
               Everything you need for the perfect gift registry experience
             </p>
           </div>
@@ -220,7 +220,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <h3 className="text-xl font-bold mb-3 text-gray-900">No Unwanted Gifts</h3>
-              <p className="text-gray-600 leading-relaxed font-light">
+              <p className="text-gray-800 leading-relaxed font-light">
                 Choose exactly what you want. No more duplicate presents or items you'll never use.
               </p>
             </div>
@@ -232,7 +232,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <h3 className="text-xl font-bold mb-3 text-gray-900">Group Contributions</h3>
-              <p className="text-gray-600 leading-relaxed font-light">
+              <p className="text-gray-800 leading-relaxed font-light">
                 Big gift? Everyone can chip in! Track progress in real-time and see the support roll in.
               </p>
             </div>
@@ -244,7 +244,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <h3 className="text-xl font-bold mb-3 text-gray-900">Keep All Contributions</h3>
-              <p className="text-gray-600 leading-relaxed font-light">
+              <p className="text-gray-800 leading-relaxed font-light">
                 Even if items aren't fully funded, you keep the money. Total flexibility, zero pressure.
               </p>
             </div>
@@ -256,7 +256,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <h3 className="text-xl font-bold mb-3 text-gray-900">AI Gift Suggestions</h3>
-              <p className="text-gray-600 leading-relaxed font-light">
+              <p className="text-gray-800 leading-relaxed font-light">
                 Not sure what to add? Our AI suggests perfect gifts based on your interests and style.
               </p>
             </div>
@@ -268,7 +268,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <h3 className="text-xl font-bold mb-3 text-gray-900">Mobile Optimized</h3>
-              <p className="text-gray-600 leading-relaxed font-light">
+              <p className="text-gray-800 leading-relaxed font-light">
                 Beautiful, responsive design that works perfectly on any device. Create and share on the go.
               </p>
             </div>
@@ -280,7 +280,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <h3 className="text-xl font-bold mb-3 text-gray-900">Secure & Private</h3>
-              <p className="text-gray-600 leading-relaxed font-light">
+              <p className="text-gray-800 leading-relaxed font-light">
                 Bank-level security for all transactions. Your data is safe, and you control who sees your registry.
               </p>
             </div>
@@ -314,7 +314,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-300 py-16 px-6">
+      <footer className="bg-gray-900 text-gray-700 py-16 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 mb-12">
             <div>
@@ -324,7 +324,7 @@ export default function LandingPage() {
                 </div>
                 <span className="text-xl font-bold text-white">Memora</span>
               </div>
-              <p className="text-gray-400 text-sm font-light">
+              <p className="text-gray-800 text-sm font-light">
                 The modern way to create and share gift registries.
               </p>
             </div>
@@ -353,7 +353,7 @@ export default function LandingPage() {
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 pt-8 text-center text-sm text-gray-400 font-light">
+          <div className="border-t border-gray-800 pt-8 text-center text-sm text-gray-800 font-light">
             <p>© 2025 Memora. All rights reserved. Making celebrations better, one gift at a time.</p>
           </div>
         </div>

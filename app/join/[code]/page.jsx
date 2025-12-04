@@ -164,7 +164,7 @@ export default function JoinEventPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">Invalid Invite Link</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <p className="text-gray-800 mb-6">{error}</p>
           <Link
             href="/"
             className="inline-block bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg"
@@ -185,7 +185,7 @@ export default function JoinEventPage() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent mb-2">
             You're Invited! 🎉
           </h1>
-          <p className="text-gray-600">You've been invited to join an event on Memora</p>
+          <p className="text-gray-800">You've been invited to join an event on Memora</p>
         </div>
 
         {/* Event Card */}
@@ -207,7 +207,7 @@ export default function JoinEventPage() {
                   </svg>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Event Date</p>
+                  <p className="text-sm text-gray-700">Event Date</p>
                   <p className="font-semibold">{formatDate(event.event_date)}</p>
                 </div>
               </div>
@@ -221,7 +221,7 @@ export default function JoinEventPage() {
                 </svg>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Hosted by</p>
+                <p className="text-sm text-gray-700">Hosted by</p>
                 <p className="font-semibold">{ownerName}</p>
               </div>
             </div>
@@ -229,7 +229,7 @@ export default function JoinEventPage() {
             {/* Description */}
             {event?.description && (
               <div className="pt-4 border-t border-gray-100">
-                <p className="text-gray-600 text-sm leading-relaxed">{event.description}</p>
+                <p className="text-gray-800 text-sm leading-relaxed">{event.description}</p>
               </div>
             )}
 
@@ -293,7 +293,7 @@ export default function JoinEventPage() {
                   </svg>
                   Login to Join
                 </button>
-                <p className="text-center text-sm text-gray-500">
+                <p className="text-center text-sm text-gray-700">
                   Don't have an account?{" "}
                   <button
                     onClick={handleLoginRedirect}
@@ -311,7 +311,7 @@ export default function JoinEventPage() {
         <div className="text-center mt-6">
           <Link
             href="/"
-            className="text-gray-500 hover:text-purple-600 text-sm font-medium transition"
+            className="text-gray-700 hover:text-purple-600 text-sm font-medium transition"
           >
             Memora - Gift Registry Platform
           </Link>
