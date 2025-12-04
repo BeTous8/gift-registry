@@ -133,7 +133,7 @@ export default function AddContactModal({ onClose, onContactAdded, userId }) {
           </div>
 
           {/* Helper Text */}
-          <p className="text-sm text-gray-700 mt-2">
+          <p className="text-sm text-gray-900 mt-2">
             Enter at least 3 characters to search for users by email
           </p>
         </div>
@@ -152,15 +152,15 @@ export default function AddContactModal({ onClose, onContactAdded, userId }) {
               <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
             </div>
           ) : searchQuery.length < 3 ? (
-            <div className="text-center py-8 text-gray-700">
-              <svg className="w-16 h-16 mx-auto mb-3 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-center py-8 text-gray-900">
+              <svg className="w-16 h-16 mx-auto mb-3 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <p>Start typing to search for users</p>
             </div>
           ) : searchResults.length === 0 ? (
-            <div className="text-center py-8 text-gray-700">
-              <svg className="w-16 h-16 mx-auto mb-3 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-center py-8 text-gray-900">
+              <svg className="w-16 h-16 mx-auto mb-3 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <p>No users found</p>
@@ -188,7 +188,7 @@ export default function AddContactModal({ onClose, onContactAdded, userId }) {
                   </div>
 
                   {user.is_contact ? (
-                    <span className="text-sm text-gray-700 bg-gray-200 px-3 py-1 rounded-full">
+                    <span className="text-sm text-gray-900 bg-gray-200 px-3 py-1 rounded-full">
                       Already added
                     </span>
                   ) : (
@@ -217,7 +217,7 @@ export default function AddContactModal({ onClose, onContactAdded, userId }) {
         <div className="p-6 border-t border-gray-200">
           <button
             onClick={onClose}
-            className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+            className="w-full px-4 py-2 bg-gray-200 text-gray-900 rounded-lg font-semibold hover:bg-gray-300 transition"
           >
             Close
           </button>

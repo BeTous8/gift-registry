@@ -149,7 +149,7 @@ export default function LocationSearchModal({ onClose, onLocationSelected }) {
                 </svg>
               </div>
 
-              <p className="text-sm text-gray-700 mt-2">
+              <p className="text-sm text-gray-900 mt-2">
                 Enter at least 3 characters to search
               </p>
             </>
@@ -210,7 +210,7 @@ export default function LocationSearchModal({ onClose, onLocationSelected }) {
                       {[...Array(5)].map((_, i) => (
                         <svg
                           key={i}
-                          className={`w-5 h-5 ${i < Math.floor(selectedPlace.rating) ? 'text-yellow-400' : 'text-gray-700'}`}
+                          className={`w-5 h-5 ${i < Math.floor(selectedPlace.rating) ? 'text-yellow-400' : 'text-gray-900'}`}
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -218,7 +218,7 @@ export default function LocationSearchModal({ onClose, onLocationSelected }) {
                         </svg>
                       ))}
                     </div>
-                    <span className="text-sm font-medium text-gray-700">{selectedPlace.rating.toFixed(1)}</span>
+                    <span className="text-sm font-medium text-gray-900">{selectedPlace.rating.toFixed(1)}</span>
                   </div>
                 )}
 
@@ -228,12 +228,12 @@ export default function LocationSearchModal({ onClose, onLocationSelected }) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <p className="text-gray-700">{selectedPlace.formatted_address}</p>
+                  <p className="text-gray-900">{selectedPlace.formatted_address}</p>
                 </div>
 
                 {/* Location coordinates (optional) */}
                 {selectedPlace.geometry && (
-                  <div className="mt-3 text-xs text-gray-700">
+                  <div className="mt-3 text-xs text-gray-900">
                     Coordinates: {selectedPlace.geometry.lat?.toFixed(6)}, {selectedPlace.geometry.lng?.toFixed(6)}
                   </div>
                 )}
@@ -262,16 +262,16 @@ export default function LocationSearchModal({ onClose, onLocationSelected }) {
               <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
             </div>
           ) : searchQuery.length < 3 ? (
-            <div className="text-center py-8 text-gray-700">
-              <svg className="w-16 h-16 mx-auto mb-3 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-center py-8 text-gray-900">
+              <svg className="w-16 h-16 mx-auto mb-3 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               <p>Start typing to search for locations</p>
             </div>
           ) : predictions.length === 0 ? (
-            <div className="text-center py-8 text-gray-700">
-              <svg className="w-16 h-16 mx-auto mb-3 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-center py-8 text-gray-900">
+              <svg className="w-16 h-16 mx-auto mb-3 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <p>No locations found</p>
@@ -315,7 +315,7 @@ export default function LocationSearchModal({ onClose, onLocationSelected }) {
             <div className="flex gap-3">
               <button
                 onClick={onClose}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-900 rounded-lg font-semibold hover:bg-gray-300 transition"
               >
                 Cancel
               </button>
@@ -329,7 +329,7 @@ export default function LocationSearchModal({ onClose, onLocationSelected }) {
           ) : (
             <button
               onClick={onClose}
-              className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+              className="w-full px-4 py-2 bg-gray-200 text-gray-900 rounded-lg font-semibold hover:bg-gray-300 transition"
             >
               Close
             </button>

@@ -36,7 +36,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-6">
             <Link
               href="/login"
-              className="text-gray-700 hover:text-rose-600 font-medium transition-colors hidden sm:block"
+              className="text-gray-900 hover:text-rose-600 font-medium transition-colors hidden sm:block"
             >
               Sign In
             </Link>
@@ -91,13 +91,13 @@ export default function LandingPage() {
             </Link>
             <Link
               href="#how-it-works"
-              className="px-8 py-4 bg-white text-gray-700 rounded-full font-semibold text-lg border-2 border-gray-200 hover:border-rose-300 hover:text-rose-600 transition-all duration-300"
+              className="px-8 py-4 bg-white text-gray-900 rounded-full font-semibold text-lg border-2 border-gray-200 hover:border-rose-300 hover:text-rose-600 transition-all duration-300"
             >
               Learn More
             </Link>
           </div>
           
-          <p className="text-sm text-gray-700 font-medium mb-16">
+          <p className="text-sm text-gray-900 font-medium mb-16">
             Free forever • No credit card required • Set up in minutes
           </p>
         </div>
@@ -314,7 +314,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-700 py-16 px-6">
+      <footer className="bg-gray-900 text-gray-900 py-16 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 mb-12">
             <div>

@@ -572,7 +572,7 @@ export default function DashboardPage() {
               setSidebarOpen(!sidebarOpen);
               if (!sidebarOpen) setMobileMenuOpen(false);
             }}
-            className="p-2 rounded-md hover:bg-gray-100 transition text-gray-800 hover:text-gray-800"
+            className="p-2 rounded-md hover:bg-gray-100 transition text-gray-900 hover:text-gray-900"
             aria-label="Toggle sidebar"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -611,11 +611,11 @@ export default function DashboardPage() {
                       ? "bg-gradient-to-r from-pink-50 to-purple-50 text-purple-700 font-semibold border-l-4 border-purple-500"
                       : item.highlight
                       ? "text-purple-700 bg-purple-50 hover:bg-purple-100"
-                      : "text-gray-700 hover:bg-purple-50 hover:text-purple-700"
+                      : "text-gray-900 hover:bg-purple-50 hover:text-purple-700"
                   }
                 `}
               >
-                <span className={`flex-shrink-0 ${isActive ? "text-purple-600" : item.highlight ? "text-purple-600" : "text-gray-700"}`}>
+                <span className={`flex-shrink-0 ${isActive ? "text-purple-600" : item.highlight ? "text-purple-600" : "text-gray-900"}`}>
                   {item.icon}
                 </span>
                 {sidebarOpen && (
@@ -626,7 +626,7 @@ export default function DashboardPage() {
                         text-xs font-bold px-2 py-0.5 rounded-full
                         ${item.highlight
                           ? "bg-pink-500 text-white animate-pulse"
-                          : "bg-gray-200 text-gray-700"}
+                          : "bg-gray-200 text-gray-900"}
                       `}>
                         {item.count}
                       </span>
@@ -651,10 +651,10 @@ export default function DashboardPage() {
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800 truncate">
+                <p className="text-sm font-medium text-gray-900 truncate">
                   {user?.email || "User"}
                 </p>
-                <p className="text-xs text-gray-700 truncate">Account</p>
+                <p className="text-xs text-gray-900 truncate">Account</p>
               </div>
             </div>
           ) : (
@@ -688,7 +688,7 @@ export default function DashboardPage() {
         <header className="lg:hidden bg-white/90 backdrop-blur-sm border-b border-purple-100 px-4 py-3 flex items-center justify-between">
           <button
             onClick={() => setMobileMenuOpen(true)}
-            className="p-2 rounded-md hover:bg-purple-50 text-gray-800 transition"
+            className="p-2 rounded-md hover:bg-purple-50 text-gray-900 transition"
             aria-label="Open menu"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -711,7 +711,7 @@ export default function DashboardPage() {
                   {user ? (getFirstName(user) ? `Welcome, ${getFirstName(user)}! 🎉` : 'Dashboard') : 'Dashboard'}
                 </h1>
                 {user && (
-                  <p className="text-gray-800 text-sm mt-2">{user.email}</p>
+                  <p className="text-gray-900 text-sm mt-2">{user.email}</p>
                 )}
               </div>
               <Link
@@ -737,8 +737,8 @@ export default function DashboardPage() {
                       </svg>
                     </div>
                   </div>
-                  <p className="text-3xl font-bold text-gray-800 mb-1">{stats.totalEvents}</p>
-                  <p className="text-sm text-gray-800">Total Events</p>
+                  <p className="text-3xl font-bold text-gray-900 mb-1">{stats.totalEvents}</p>
+                  <p className="text-sm text-gray-900">Total Events</p>
                 </div>
 
                 {/* Upcoming Events Card */}
@@ -750,8 +750,8 @@ export default function DashboardPage() {
                       </svg>
                     </div>
                   </div>
-                  <p className="text-3xl font-bold text-gray-800 mb-1">{stats.upcomingEvents}</p>
-                  <p className="text-sm text-gray-800">Upcoming Events</p>
+                  <p className="text-3xl font-bold text-gray-900 mb-1">{stats.upcomingEvents}</p>
+                  <p className="text-sm text-gray-900">Upcoming Events</p>
                 </div>
 
                 {/* Total Raised Card */}
@@ -763,8 +763,8 @@ export default function DashboardPage() {
                       </svg>
                     </div>
                   </div>
-                  <p className="text-3xl font-bold text-gray-800 mb-1">${(stats.totalRaised / 100).toFixed(2)}</p>
-                  <p className="text-sm text-gray-800">Total Raised</p>
+                  <p className="text-3xl font-bold text-gray-900 mb-1">${(stats.totalRaised / 100).toFixed(2)}</p>
+                  <p className="text-sm text-gray-900">Total Raised</p>
                 </div>
 
                 {/* Total Items Card */}
@@ -776,8 +776,8 @@ export default function DashboardPage() {
                       </svg>
                     </div>
                   </div>
-                  <p className="text-3xl font-bold text-gray-800 mb-1">{stats.totalItems}</p>
-                  <p className="text-sm text-gray-800">Total Items</p>
+                  <p className="text-3xl font-bold text-gray-900 mb-1">{stats.totalItems}</p>
+                  <p className="text-sm text-gray-900">Total Items</p>
                 </div>
               </div>
             )}
@@ -787,7 +787,7 @@ export default function DashboardPage() {
               <div className="flex justify-center py-24">
                 <div className="flex flex-col items-center gap-4">
                   <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-                  <p className="text-lg font-medium text-gray-700">Loading your events...</p>
+                  <p className="text-lg font-medium text-gray-900">Loading your events...</p>
                 </div>
               </div>
             ) : (
@@ -796,7 +796,7 @@ export default function DashboardPage() {
                 {activeTab === "invitations" ? (
                   /* Invitations Tab Content */
                   <div className="space-y-4">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Pending Invitations</h2>
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">Pending Invitations</h2>
                     {pendingInvitations.length === 0 ? (
                       <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 text-center border border-purple-100">
                         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-200 to-pink-200 flex items-center justify-center">
@@ -804,8 +804,8 @@ export default function DashboardPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                           </svg>
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">No pending invitations</h3>
-                        <p className="text-gray-800">When someone invites you to their event, it will appear here.</p>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No pending invitations</h3>
+                        <p className="text-gray-900">When someone invites you to their event, it will appear here.</p>
                       </div>
                     ) : (
                       <div className="grid gap-4">
@@ -820,10 +820,10 @@ export default function DashboardPage() {
                           >
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                               <div className="flex-1">
-                                <h3 className="text-lg font-bold text-gray-800 mb-1">
+                                <h3 className="text-lg font-bold text-gray-900 mb-1">
                                   {invitation.events?.title || "Event"}
                                 </h3>
-                                <div className="flex flex-wrap gap-3 text-sm text-gray-800">
+                                <div className="flex flex-wrap gap-3 text-sm text-gray-900">
                                   {invitation.events?.event_date && (
                                     <span className="flex items-center gap-1">
                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -846,7 +846,7 @@ export default function DashboardPage() {
                                 <button
                                   onClick={() => handleInvitationResponse(invitation.id, 'declined')}
                                   disabled={respondingToInvite === invitation.id}
-                                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition disabled:opacity-50"
+                                  className="px-4 py-2 bg-gray-200 text-gray-900 rounded-lg font-medium hover:bg-gray-300 transition disabled:opacity-50"
                                 >
                                   Decline
                                 </button>
@@ -876,14 +876,14 @@ export default function DashboardPage() {
                         )}
                       </svg>
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-3">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-3">
                       {activeTab === "joined"
                         ? "No joined events yet"
                         : activeFilter === "upcoming"
                         ? "No upcoming events"
                         : "Start your first celebration!"}
                     </h2>
-                    <p className="text-gray-800 mb-6 max-w-md mx-auto">
+                    <p className="text-gray-900 mb-6 max-w-md mx-auto">
                       {activeTab === "joined"
                         ? "When you accept an invitation or join an event, it will appear here."
                         : activeFilter === "upcoming"
@@ -906,7 +906,7 @@ export default function DashboardPage() {
                   <>
                     {/* Section Header for Joined Events */}
                     {activeTab === "joined" && (
-                      <h2 className="text-xl font-bold text-gray-800 mb-4">Events You've Joined</h2>
+                      <h2 className="text-xl font-bold text-gray-900 mb-4">Events You've Joined</h2>
                     )}
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                       {displayEvents.map((event, index) => {
@@ -925,7 +925,7 @@ export default function DashboardPage() {
                                   e.stopPropagation();
                                   handleDeleteClick(event);
                                 }}
-                                className="absolute top-3 right-3 bg-white/90 hover:bg-red-500 text-gray-700 hover:text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg transition-all shadow-md z-10 opacity-0 group-hover:opacity-100"
+                                className="absolute top-3 right-3 bg-white/90 hover:bg-red-500 text-gray-900 hover:text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg transition-all shadow-md z-10 opacity-0 group-hover:opacity-100"
                                 title="Delete event"
                                 disabled={deletingEventId === event.id}
                               >
@@ -942,7 +942,7 @@ export default function DashboardPage() {
                             {/* Event Header */}
                             <div className="mb-4">
                               <div className="flex items-start justify-between mb-3">
-                                <h3 className="text-xl font-bold text-gray-800 pr-8 line-clamp-2">
+                                <h3 className="text-xl font-bold text-gray-900 pr-8 line-clamp-2">
                                   {event.title}
                                 </h3>
                               </div>
@@ -955,7 +955,7 @@ export default function DashboardPage() {
                                     : dateInfo.status === 'upcoming'
                                     ? 'bg-blue-100 text-blue-700'
                                     : dateInfo.status === 'past'
-                                    ? 'bg-gray-200 text-gray-800'
+                                    ? 'bg-gray-200 text-gray-900'
                                     : 'bg-purple-100 text-purple-700'
                                 }`}>
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -966,8 +966,8 @@ export default function DashboardPage() {
                               )}
 
                               {/* Description */}
-                              <p className="text-gray-700 text-sm mb-4 line-clamp-2">
-                                {event.description || <span className="italic text-gray-700">No description provided.</span>}
+                              <p className="text-gray-900 text-sm mb-4 line-clamp-2">
+                                {event.description || <span className="italic text-gray-900">No description provided.</span>}
                               </p>
                             </div>
 
@@ -976,21 +976,21 @@ export default function DashboardPage() {
                               <div className="flex items-center justify-between">
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-1">
-                                    <span className="text-lg font-bold text-gray-800">${(event.totalRaised / 100).toFixed(2)}</span>
+                                    <span className="text-lg font-bold text-gray-900">${(event.totalRaised / 100).toFixed(2)}</span>
                                     {event.totalRaised > 0 && (
                                       <span className="text-xs text-green-600 font-semibold">✓</span>
                                     )}
                                   </div>
-                                  <span className="text-xs text-gray-800">Total Raised</span>
+                                  <span className="text-xs text-gray-900">Total Raised</span>
                                 </div>
                                 <div className="flex flex-col items-end">
                                   <div className="flex items-center gap-1">
-                                    <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                     </svg>
-                                    <span className="text-lg font-bold text-gray-800">{event.itemCount}</span>
+                                    <span className="text-lg font-bold text-gray-900">{event.itemCount}</span>
                                   </div>
-                                  <span className="text-xs text-gray-800">
+                                  <span className="text-xs text-gray-900">
                                     Item{event.itemCount === 1 ? "" : "s"}
                                   </span>
                                 </div>
@@ -1017,15 +1017,15 @@ export default function DashboardPage() {
               className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-xl font-bold text-gray-800 mb-2">Delete Event</h3>
-              <p className="text-gray-800 mb-4">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Event</h3>
+              <p className="text-gray-900 mb-4">
                 Are you sure you want to delete <span className="font-semibold">"{eventToDelete.title}"</span>?
                 This action cannot be undone and will delete all associated items and contributions.
               </p>
               <div className="flex gap-3 justify-end">
                 <button
                   onClick={handleCloseDeleteDialog}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded font-semibold hover:bg-gray-300 transition"
+                  className="px-4 py-2 bg-gray-200 text-gray-900 rounded font-semibold hover:bg-gray-300 transition"
                   disabled={deletingEventId === eventToDelete.id}
                 >
                   Cancel

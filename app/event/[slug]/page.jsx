@@ -712,13 +712,13 @@ export default function ViewEventPage() {
         )}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32">
-            <div className="text-gray-700 text-lg animate-pulse">Loading event...</div>
+            <div className="text-gray-900 text-lg animate-pulse">Loading event...</div>
           </div>
         ) : notFound ? (
           <div className="flex flex-col items-center justify-center py-32">
             <div className="bg-white rounded-lg shadow p-8">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">Event Not Found</h1>
-              <p className="text-gray-700 mb-2">
+              <p className="text-gray-900 mb-2">
                 Sorry, we couldn't find this event.
               </p>
             </div>
@@ -801,7 +801,7 @@ export default function ViewEventPage() {
                           }}
                         ></div>
                       </div>
-                      <div className="flex justify-between text-xs text-gray-700 mt-1">
+                      <div className="flex justify-between text-xs text-gray-900 mt-1">
                         <span>$0</span>
                         <span>${(totalGoal / 100).toFixed(2)} Goal</span>
                       </div>
@@ -848,7 +848,7 @@ export default function ViewEventPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-800 text-sm truncate">{member.name}</p>
-                            <p className="text-xs text-gray-700">Member</p>
+                            <p className="text-xs text-gray-900">Member</p>
                           </div>
                           {isOwner && (
                             <button
@@ -857,7 +857,7 @@ export default function ViewEventPage() {
                                 setMemberToDelete(member);
                                 setDeleteMemberDialogOpen(true);
                               }}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 p-1"
+                              className="text-red-500 hover:text-red-700 p-1 transition"
                               title="Remove member"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -871,13 +871,13 @@ export default function ViewEventPage() {
                   )}
 
                   {members.length === 0 && !eventOwner && (
-                    <p className="text-gray-700 text-sm mb-4">No members yet</p>
+                    <p className="text-gray-900 text-sm mb-4">No members yet</p>
                   )}
 
                   {/* Pending Invitations (Owner only) */}
                   {isOwner && invitations.length > 0 && (
                     <div className="border-t border-gray-200 pt-3 mt-3">
-                      <h4 className="font-semibold text-gray-700 text-sm mb-2">Pending Invites</h4>
+                      <h4 className="font-semibold text-gray-900 text-sm mb-2">Pending Invites</h4>
                       <div className="space-y-2">
                         {invitations.filter(inv => inv.status === 'pending').map((invite) => (
                           <div key={invite.id} className="flex items-center gap-2 p-2 bg-yellow-50 rounded-lg">
@@ -885,7 +885,7 @@ export default function ViewEventPage() {
                               ✉
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-gray-700 text-sm truncate">{invite.email}</p>
+                              <p className="font-medium text-gray-900 text-sm truncate">{invite.email}</p>
                               <p className="text-xs text-yellow-600">Pending</p>
                             </div>
                             <button
@@ -973,7 +973,7 @@ export default function ViewEventPage() {
                       {event?.invite_code && (
                         <button
                           onClick={handleCopyInviteLink}
-                          className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg font-semibold text-sm hover:bg-gray-200 transition"
+                          className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-900 px-3 py-2 rounded-lg font-semibold text-sm hover:bg-gray-200 transition"
                         >
                           {copiedInviteLink ? (
                             <>
@@ -1033,7 +1033,7 @@ export default function ViewEventPage() {
                             {[...Array(5)].map((_, i) => (
                               <svg
                                 key={i}
-                                className={`w-5 h-5 ${i < Math.floor(event.location.rating) ? 'text-yellow-400' : 'text-gray-700'}`}
+                                className={`w-5 h-5 ${i < Math.floor(event.location.rating) ? 'text-yellow-400' : 'text-gray-900'}`}
                                 fill="currentColor"
                                 viewBox="0 0 20 20"
                               >
@@ -1041,7 +1041,7 @@ export default function ViewEventPage() {
                               </svg>
                             ))}
                           </div>
-                          <span className="text-sm font-medium text-gray-700">{event.location.rating.toFixed(1)}</span>
+                          <span className="text-sm font-medium text-gray-900">{event.location.rating.toFixed(1)}</span>
                         </div>
                       )}
 
@@ -1051,7 +1051,7 @@ export default function ViewEventPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
-                        <p className="text-gray-700">{event.location.formatted_address}</p>
+                        <p className="text-gray-900">{event.location.formatted_address}</p>
                       </div>
 
                       {/* Google Maps Link */}
@@ -1125,7 +1125,7 @@ export default function ViewEventPage() {
                           </h4>
                           <form onSubmit={handleUpdateItem} className="space-y-4">
                             <div>
-                              <label className="block text-sm font-medium mb-1" htmlFor="item-title">
+                              <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="item-title">
                                 Item Title <span className="text-red-500">*</span>
                               </label>
                               <input
@@ -1140,7 +1140,7 @@ export default function ViewEventPage() {
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium mb-1" htmlFor="item-price">
+                              <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="item-price">
                                 Price (USD) <span className="text-red-500">*</span>
                               </label>
                               <input
@@ -1157,7 +1157,7 @@ export default function ViewEventPage() {
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium mb-1" htmlFor="item-link">
+                              <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="item-link">
                                 Product Link
                               </label>
                               <input
@@ -1171,7 +1171,7 @@ export default function ViewEventPage() {
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium mb-1" htmlFor="item-img">
+                              <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="item-img">
                                 Image URL
                               </label>
                               <input
@@ -1205,7 +1205,7 @@ export default function ViewEventPage() {
                               </button>
                               <button
                                 type="button"
-                                className="bg-gray-300 text-gray-700 px-4 py-2 rounded font-semibold hover:bg-gray-400 transition"
+                                className="bg-gray-300 text-gray-900 px-4 py-2 rounded font-semibold hover:bg-gray-400 transition"
                                 onClick={handleCancelEdit}
                                 disabled={itemLoading}
                               >
@@ -1219,7 +1219,7 @@ export default function ViewEventPage() {
 
                 <div className="grid gap-6 md:grid-cols-2">
                   {items.length === 0 ? (
-                    <div className="col-span-full text-center text-gray-700 italic">
+                    <div className="col-span-full text-center text-gray-900 italic">
                       {isOwner
                         ? "No items yet. Use 'Add Item' to add one."
                         : "No items found for this event."}
@@ -1243,7 +1243,7 @@ export default function ViewEventPage() {
                               />
                             </div>
                           ) : (
-                            <div className="h-44 flex items-center justify-center bg-gray-100 rounded-t-lg text-gray-700 text-5xl">
+                            <div className="h-44 flex items-center justify-center bg-gray-100 rounded-t-lg text-gray-900 text-5xl">
                               <span className="material-symbols-outlined">image</span>
                             </div>
                           )}
@@ -1283,7 +1283,7 @@ export default function ViewEventPage() {
                                     }}
                                   ></div>
                                 </div>
-                                <div className="flex justify-between text-xs text-gray-700 mt-0.5">
+                                <div className="flex justify-between text-xs text-gray-900 mt-0.5">
                                   <span>
                                     Raised: ${ (raised / 100).toFixed(2) }
                                   </span>
@@ -1321,7 +1321,7 @@ export default function ViewEventPage() {
                                   disabled={itemFunded}
                                   className={`flex-1 px-4 py-2 rounded-md font-semibold transition ${
                                     itemFunded
-                                      ? 'bg-gray-300 text-gray-700 cursor-not-allowed'
+                                      ? 'bg-gray-300 text-gray-900 cursor-not-allowed'
                                       : 'bg-blue-600 text-white hover:bg-blue-700'
                                   }`}
                                 >
@@ -1357,7 +1357,7 @@ export default function ViewEventPage() {
         {mounted && showInviteFromContactsModal && (
             <InviteFromContactsModal
                 isOpen={true}
-                onClose={() => setShowInviteModal(false)}
+                onClose={() => setShowInviteFromContactsModal(false)}
                 eventId={event?.id}
                 eventTitle={event?.title}
                 onInviteSuccess={(message) => {
@@ -1392,7 +1392,7 @@ export default function ViewEventPage() {
             <h3 className="text-xl font-bold text-gray-800 mb-4">Invite Someone</h3>
             <form onSubmit={handleSendInvite}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   Email Address
                 </label>
                 <input
@@ -1418,7 +1418,7 @@ export default function ViewEventPage() {
                     setInviteEmail("");
                     setInviteError("");
                   }}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+                  className="px-4 py-2 bg-gray-200 text-gray-900 rounded-lg font-semibold hover:bg-gray-300 transition"
                   disabled={inviteLoading}
                 >
                   Cancel
@@ -1461,7 +1461,7 @@ export default function ViewEventPage() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={handleCloseDeleteDialog}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded font-semibold hover:bg-gray-300 transition"
+                className="px-4 py-2 bg-gray-200 text-gray-900 rounded font-semibold hover:bg-gray-300 transition"
                 disabled={itemLoading}
               >
                 Cancel
@@ -1502,7 +1502,7 @@ export default function ViewEventPage() {
                   setDeleteMemberDialogOpen(false);
                   setMemberToDelete(null);
                 }}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded font-semibold hover:bg-gray-300 transition"
+                className="px-4 py-2 bg-gray-200 text-gray-900 rounded font-semibold hover:bg-gray-300 transition"
                 disabled={deletingMember}
               >
                 Cancel
@@ -1617,7 +1617,7 @@ function ContributeModal({ item, onClose }) {
 
         <div className="mb-6">
           <h4 className="font-semibold text-lg mb-2 text-gray-900">{item.title}</h4>
-          <div className="text-sm text-gray-700 space-y-1">
+          <div className="text-sm text-gray-900 space-y-1">
             <p>Price: <span className="font-semibold text-gray-900">${(item.price_cents / 100).toFixed(2)}</span></p>
             <p>Already raised: <span className="font-semibold text-gray-900">${(item.current_amount_cents / 100).toFixed(2)}</span></p>
             <p className="text-green-700 font-semibold">Remaining: ${remaining.toFixed(2)}</p>

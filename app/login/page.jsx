@@ -212,7 +212,7 @@ export default function LoginPage() {
       <div className="bg-white shadow-md rounded-lg px-10 py-8 max-w-md w-full">
         {/* Header with Sign In/Sign Up Toggle */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-4 text-center">
+          <h1 className="text-2xl font-bold mb-4 text-center text-gray-900">
             {authMode === "signin" ? "Sign In" : "Sign Up"}
           </h1>
           <div className="flex border border-gray-300 rounded-md overflow-hidden">
@@ -225,7 +225,7 @@ export default function LoginPage() {
               className={`flex-1 py-2 px-4 text-sm font-semibold transition ${
                 authMode === "signin"
                   ? "bg-blue-600 text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-50"
+                  : "bg-white text-gray-900 hover:bg-gray-50"
               }`}
             >
               Sign In
@@ -239,7 +239,7 @@ export default function LoginPage() {
               className={`flex-1 py-2 px-4 text-sm font-semibold transition ${
                 authMode === "signup"
                   ? "bg-blue-600 text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-50"
+                  : "bg-white text-gray-900 hover:bg-gray-50"
               }`}
             >
               Sign Up
@@ -261,7 +261,7 @@ export default function LoginPage() {
               <button
                 onClick={() => handleOAuthSignIn('google')}
                 disabled={oauthLoading !== null}
-                className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-300 text-gray-700 py-3 rounded-md font-semibold hover:bg-gray-50 transition disabled:opacity-50 relative"
+                className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-300 text-gray-900 py-3 rounded-md font-semibold hover:bg-gray-50 transition disabled:opacity-50 relative"
               >
                 {oauthLoading === 'google' && (
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -283,7 +283,7 @@ export default function LoginPage() {
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-700">OR</span>
+                <span className="px-2 bg-white text-gray-900">OR</span>
               </div>
             </div>
 
@@ -291,7 +291,7 @@ export default function LoginPage() {
             <div className="space-y-3 mb-6">
               <button
                 onClick={() => setSelectedMethod("phone")}
-                className="w-full bg-white border-2 border-gray-300 text-gray-700 py-3 rounded-md font-semibold hover:bg-gray-50 transition"
+                className="w-full bg-white border-2 border-gray-300 text-gray-900 py-3 rounded-md font-semibold hover:bg-gray-50 transition"
               >
                 Continue with Phone Number
               </button>
@@ -319,13 +319,13 @@ export default function LoginPage() {
               >
                 ← Back
               </button>
-              <h2 className="text-lg font-semibold">Phone Number</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Phone Number</h2>
             </div>
 
             {!otpSent ? (
               <>
                 <div>
-                  <label className="block text-sm font-medium mb-1" htmlFor="phone">
+                  <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="phone">
                     Phone Number
                   </label>
                   <input
@@ -339,7 +339,7 @@ export default function LoginPage() {
                     disabled={loading}
                     placeholder="+1234567890"
                   />
-                  <p className="text-xs text-gray-700 mt-1">
+                  <p className="text-xs text-gray-900 mt-1">
                     Include country code (e.g., +1 for US)
                   </p>
                 </div>
@@ -360,7 +360,7 @@ export default function LoginPage() {
                   Verification code sent to {phone}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1" htmlFor="otp">
+                  <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="otp">
                     Enter Verification Code
                   </label>
                   <input
@@ -418,13 +418,13 @@ export default function LoginPage() {
               >
                 ← Back
               </button>
-              <h2 className="text-lg font-semibold">
+              <h2 className="text-lg font-semibold text-gray-900">
                 {authMode === "signin" ? "Email & Password" : "Create Account"}
               </h2>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="email">
+              <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="email">
                 Email address
               </label>
               <input
@@ -441,7 +441,7 @@ export default function LoginPage() {
             </div>
             {authMode === "signup" && (
               <div>
-                <label className="block text-sm font-medium mb-1" htmlFor="username">
+                <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="username">
                   Username
                 </label>
                 <input
@@ -457,14 +457,14 @@ export default function LoginPage() {
                   maxLength="20"
                   minLength="3"
                 />
-                <p className="text-xs text-gray-700 mt-1">
+                <p className="text-xs text-gray-900 mt-1">
                   3-20 characters, letters, numbers, underscores, and hyphens only
                 </p>
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="password">
+              <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="password">
                 Password
               </label>
               <input
@@ -479,7 +479,7 @@ export default function LoginPage() {
                 placeholder={authMode === "signin" ? "Enter your password" : "Create a password"}
               />
               {authMode === "signup" && (
-                <p className="text-xs text-gray-700 mt-1">
+                <p className="text-xs text-gray-900 mt-1">
                   Must be at least 6 characters
                 </p>
               )}
@@ -487,7 +487,7 @@ export default function LoginPage() {
 
             {authMode === "signup" && (
               <div>
-                <label className="block text-sm font-medium mb-1" htmlFor="confirmPassword">
+                <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="confirmPassword">
                   Confirm Password
                 </label>
                 <input

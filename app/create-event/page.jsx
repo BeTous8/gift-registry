@@ -144,10 +144,10 @@ export default function CreateEventPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8">
       <div className="bg-white shadow-md rounded-lg px-10 py-8 max-w-md w-full">
-        <h1 className="text-2xl font-bold mb-6 text-center">Create Event</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center text-gray-900">Create Event</h1>
         <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="title">
+              <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="title">
                 Event Title <span className="text-red-500">*</span>
               </label>
               <input
@@ -162,7 +162,7 @@ export default function CreateEventPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="eventType">
+              <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="eventType">
                 Event Type <span className="text-red-500">*</span>
               </label>
               <select
@@ -175,7 +175,7 @@ export default function CreateEventPage() {
                 <option value="gift-registry">Gift Registry</option>
                 <option value="casual-meetup">Casual Meetup</option>
               </select>
-              <p className="text-xs text-gray-700 mt-1">
+              <p className="text-xs text-gray-900 mt-1">
                 {eventType === "gift-registry"
                   ? "Create a wishlist with items for contributions"
                   : "Organize a casual gathering with location details"}
@@ -183,7 +183,7 @@ export default function CreateEventPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="date">
+              <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="date">
                 Event Date
               </label>
               <input
@@ -196,7 +196,7 @@ export default function CreateEventPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="description">
+              <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="description">
                 Description
               </label>
               <textarea
@@ -212,7 +212,7 @@ export default function CreateEventPage() {
             {/* Location field - only for casual meetups */}
             {eventType === "casual-meetup" && (
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium mb-1 text-gray-900">
                   Location
                 </label>
                 {location ? (
@@ -226,7 +226,7 @@ export default function CreateEventPage() {
                             <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                             </svg>
-                            <span className="text-sm text-gray-700">{location.rating}</span>
+                            <span className="text-sm text-gray-900">{location.rating}</span>
                           </div>
                         )}
                       </div>
@@ -252,7 +252,7 @@ export default function CreateEventPage() {
                     Add Location
                   </button>
                 )}
-                <p className="text-xs text-gray-700 mt-1">
+                <p className="text-xs text-gray-900 mt-1">
                   Add a venue or meeting place for your casual meetup
                 </p>
               </div>

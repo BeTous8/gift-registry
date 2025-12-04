@@ -227,7 +227,7 @@ export default function AddItemModal({ isOpen, onClose, eventId, userId, onItemA
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div className="text-sm text-blue-800">
-                    <p className="font-semibold mb-1">How to use:</p>
+                    <p className="font-semibold mb-1 text-gray-900">How to use:</p>
                     <ol className="list-decimal list-inside space-y-1">
                       <li>Go to Amazon and find your desired product</li>
                       <li>Copy the product URL from your browser</li>
@@ -239,7 +239,7 @@ export default function AddItemModal({ isOpen, onClose, eventId, userId, onItemA
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
                   Amazon Product Link <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -251,7 +251,7 @@ export default function AddItemModal({ isOpen, onClose, eventId, userId, onItemA
                   disabled={loading}
                   required
                 />
-                <p className="text-xs text-gray-700 mt-1">
+                <p className="text-xs text-gray-900 mt-1">
                   Example: https://www.amazon.com/Apple-AirPods-Pro/dp/B0CHWRXH8B
                 </p>
               </div>
@@ -293,13 +293,13 @@ export default function AddItemModal({ isOpen, onClose, eventId, userId, onItemA
           {activeTab === 'manual' && (
             <form onSubmit={handleManualAdd} className="space-y-4">
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-gray-900">
                   <span className="font-semibold">Manual Entry:</span> Use this option for non-Amazon items or if automatic scraping fails.
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
                   Item Title <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -314,7 +314,7 @@ export default function AddItemModal({ isOpen, onClose, eventId, userId, onItemA
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
                   Price (USD) <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -331,7 +331,7 @@ export default function AddItemModal({ isOpen, onClose, eventId, userId, onItemA
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
                   Product Link (optional)
                 </label>
                 <input
@@ -345,7 +345,7 @@ export default function AddItemModal({ isOpen, onClose, eventId, userId, onItemA
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
                   Image URL (optional)
                 </label>
                 <input
