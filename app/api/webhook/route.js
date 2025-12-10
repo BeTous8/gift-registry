@@ -24,8 +24,23 @@ export async function POST(request) {
     );
   } catch (err) {
     console.error('Webhook signature verification failed:', err.message);
-    return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
+    // Generic error message to avoid leaking system details
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
+
+  // Webhook deduplication - check if we've already processed this event
+  const { data: existingEvent } = await supabase
+    .from('webhook_events_processed')
+    .select('id')
+    .eq('stripe_event_id', event.id)
+    .maybeSingle();
+
+  if (existingEvent) {
+    console.log('Duplicate webhook event detected, skipping:', event.id);
+    return NextResponse.json({ received: true, duplicate: true });
+  }
+
+  console.log('Processing webhook event:', event.type, event.id);
 
   // Handle the checkout.session.completed event
   if (event.type === 'checkout.session.completed') {
@@ -34,57 +49,39 @@ export async function POST(request) {
 
     if (!itemId) {
       console.error('No itemId in session metadata');
+      await markWebhookProcessed(event.id, event.type);
       return NextResponse.json({ error: 'Item ID missing from metadata' }, { status: 400 });
     }
 
     console.log('Payment succeeded for item:', itemId);
 
-    // Get current item data
-    const { data: item, error: itemError } = await supabase
-      .from('items')
-      .select('current_amount_cents')
-      .eq('id', itemId)
-      .single();
-
-    if (itemError) {
-      console.error('Error fetching item:', itemError);
-      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
-    }
-
-    // Update item with new amount
-    const newAmount = (item.current_amount_cents || 0) + session.amount_total;
-
-    const { error: updateError } = await supabase
-      .from('items')
-      .update({ current_amount_cents: newAmount })
-      .eq('id', itemId);
-
-    if (updateError) {
-      console.error('Error updating item:', updateError);
-      return NextResponse.json({ error: 'Failed to update item' }, { status: 500 });
-    }
-
-    // Record the contribution (optional - only if contributions table exists)
-    try {
-      const { error: contribError } = await supabase
-        .from('contributions')
-        .insert([{
-          item_id: itemId,
-          contributor_name: contributorName,
-          contributor_email: contributorEmail || null,
-          amount_cents: session.amount_total,
-          stripe_session_id: session.id,
-          status: 'completed'
-        }]);
-
-      if (contribError) {
-        console.error('Error recording contribution (table may not exist):', contribError);
+    // Use atomic contribution processing to prevent race conditions
+    const { data: result, error: processError } = await supabase.rpc(
+      'process_contribution',
+      {
+        p_item_id: itemId,
+        p_amount_cents: session.amount_total,
+        p_stripe_session_id: session.id,
+        p_contributor_name: contributorName || '',
+        p_contributor_email: contributorEmail || null
       }
-    } catch (err) {
-      console.error('Contributions table may not exist, skipping:', err.message);
+    );
+
+    if (processError) {
+      console.error('Error processing contribution:', processError);
+      await markWebhookProcessed(event.id, event.type);
+      return NextResponse.json({ error: 'Failed to process contribution' }, { status: 500 });
     }
 
-    console.log('Successfully updated item amount:', newAmount);
+    if (result && result.length > 0) {
+      const { new_amount_cents, is_duplicate } = result[0];
+
+      if (is_duplicate) {
+        console.log('Duplicate contribution detected (idempotent):', session.id);
+      } else {
+        console.log('Successfully processed contribution. New amount:', new_amount_cents);
+      }
+    }
   }
 
   // Handle payment_intent.payment_failed event
@@ -93,11 +90,11 @@ export async function POST(request) {
     const error = paymentIntent.last_payment_error;
     const declineCode = error?.decline_code || error?.code || 'unknown';
     const errorMessage = error?.message || 'Payment failed';
-    
+
     // Try to get checkout session ID from metadata or retrieve it
     let sessionId = paymentIntent.metadata?.checkout_session_id;
     let itemId = null;
-    
+
     // If we have a session ID, try to get the item ID from the session
     if (sessionId) {
       try {
@@ -107,7 +104,7 @@ export async function POST(request) {
         console.error('Error retrieving checkout session:', err.message);
       }
     }
-    
+
     // Log the failed payment with details
     console.log('Payment failed:', {
       paymentIntentId: paymentIntent.id,
@@ -119,11 +116,123 @@ export async function POST(request) {
       errorType: error?.type,
       customerId: paymentIntent.customer
     });
-    
-    // Optional: Store failed payment in database for analytics
-    // This would require a failed_payments or payment_attempts table
-    // For now, we'll just log it
   }
 
+  // Handle transfer.paid event (fulfillment completed successfully)
+  if (event.type === 'transfer.paid') {
+    const transfer = event.data.object;
+    const fulfillmentId = transfer.metadata?.fulfillment_id;
+
+    if (!fulfillmentId) {
+      console.error('No fulfillment_id in transfer metadata');
+      await markWebhookProcessed(event.id, event.type);
+      return NextResponse.json({ received: true });
+    }
+
+    console.log('Transfer paid successfully:', transfer.id, 'for fulfillment:', fulfillmentId);
+
+    // Mark fulfillment as completed using atomic function
+    const { error: completeError } = await supabase.rpc('complete_fulfillment', {
+      p_fulfillment_id: fulfillmentId
+    });
+
+    if (completeError) {
+      console.error('Error completing fulfillment:', completeError);
+      await markWebhookProcessed(event.id, event.type);
+      return NextResponse.json({ error: 'Failed to complete fulfillment' }, { status: 500 });
+    }
+
+    console.log('Fulfillment marked as completed:', fulfillmentId);
+  }
+
+  // Handle transfer.failed event (fulfillment failed)
+  if (event.type === 'transfer.failed') {
+    const transfer = event.data.object;
+    const fulfillmentId = transfer.metadata?.fulfillment_id;
+
+    if (!fulfillmentId) {
+      console.error('No fulfillment_id in transfer metadata');
+      await markWebhookProcessed(event.id, event.type);
+      return NextResponse.json({ received: true });
+    }
+
+    console.log('Transfer failed:', transfer.id, 'for fulfillment:', fulfillmentId);
+
+    // Extract failure details
+    const failureMessage = transfer.failure_message || 'Transfer failed';
+    const failureCode = transfer.failure_code || 'unknown';
+
+    // Mark fulfillment as failed using atomic function
+    const { error: failError } = await supabase.rpc('fail_fulfillment', {
+      p_fulfillment_id: fulfillmentId,
+      p_error_message: failureMessage,
+      p_error_code: failureCode
+    });
+
+    if (failError) {
+      console.error('Error marking fulfillment as failed:', failError);
+      await markWebhookProcessed(event.id, event.type);
+      return NextResponse.json({ error: 'Failed to update fulfillment status' }, { status: 500 });
+    }
+
+    console.log('Fulfillment marked as failed:', fulfillmentId);
+  }
+
+  // Handle account.updated event (Connect account verification status changed)
+  if (event.type === 'account.updated') {
+    const account = event.data.object;
+    const userId = account.metadata?.memora_user_id;
+
+    if (!userId) {
+      console.log('No memora_user_id in account metadata, skipping');
+      await markWebhookProcessed(event.id, event.type);
+      return NextResponse.json({ received: true });
+    }
+
+    console.log('Stripe account updated:', account.id, 'for user:', userId);
+
+    // Check if account is now fully verified
+    const fullyVerified = account.charges_enabled &&
+                         account.payouts_enabled &&
+                         account.capabilities?.transfers === 'active';
+
+    // Update user payment settings
+    const { error: updateError } = await supabase
+      .from('user_payment_settings')
+      .update({
+        stripe_connect_onboarding_completed: fullyVerified,
+        stripe_connect_status: fullyVerified ? 'active' : 'pending',
+        stripe_connect_capabilities: account.capabilities || {}
+      })
+      .eq('stripe_connect_account_id', account.id);
+
+    if (updateError) {
+      console.error('Error updating payment settings:', updateError);
+    } else {
+      console.log('Payment settings updated for user:', userId, 'Status:', fullyVerified ? 'active' : 'pending');
+    }
+  }
+
+  // Mark webhook as processed (deduplication)
+  await markWebhookProcessed(event.id, event.type);
+
   return NextResponse.json({ received: true });
+}
+
+/**
+ * Helper function to mark webhook event as processed
+ * Prevents duplicate processing of the same event
+ */
+async function markWebhookProcessed(stripeEventId, eventType) {
+  try {
+    await supabase
+      .from('webhook_events_processed')
+      .insert({
+        stripe_event_id: stripeEventId,
+        event_type: eventType
+      });
+  } catch (err) {
+    console.error('Error marking webhook as processed:', err.message);
+    // Non-critical error, don't fail the webhook
+  }
 }
