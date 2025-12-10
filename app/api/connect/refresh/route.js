@@ -79,7 +79,11 @@ export async function POST(request) {
       account: accountId,
       refresh_url: `${origin}/dashboard?connect=refresh`,
       return_url: `${origin}/dashboard?connect=success`,
-      type: 'account_onboarding'
+      type: 'account_onboarding',
+      collection_options: {
+        fields: 'eventually_due', // Only collect immediately required fields
+        future_requirements: 'omit' // Skip optional future requirements
+      }
     });
 
     return NextResponse.json({

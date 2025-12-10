@@ -9,6 +9,7 @@ import { useToast } from "../../components/ToastProvider";
 import LocationSearchModal from "../../components/LocationSearchModal";
 import InviteFromContactsModal from "../../components/InviteFromContactsModal";
 import AddItemModal from "../../components/AddItemModal";
+import RedemptionModal from "../../components/RedemptionModal";
 
 export default function ViewEventPage() {
   const { slug } = useParams();
@@ -52,6 +53,10 @@ export default function ViewEventPage() {
   const [memberToDelete, setMemberToDelete] = useState(null);
   const [deletingMember, setDeletingMember] = useState(false);
 
+  // Redemption states
+  const [showRedemptionModal, setShowRedemptionModal] = useState(false);
+  const [itemToRedeem, setItemToRedeem] = useState(null);
+
   // Members and invitations states
   const [members, setMembers] = useState([]);
   const [invitations, setInvitations] = useState([]);
@@ -87,7 +92,7 @@ export default function ViewEventPage() {
     const { data: eventData, error: eventError } = await supabase
       .from("events")
       .select(
-        "id, title, slug, description, event_date, event_type, location, user_id, invite_code, items(id, title, price_cents, current_amount_cents, product_link, image_url)"
+        "id, title, slug, description, event_date, event_type, location, user_id, invite_code, items(id, title, price_cents, current_amount_cents, product_link, image_url, is_fulfilled, fulfilled_at)"
       )
       .eq("slug", slug)
       .single();
@@ -399,7 +404,7 @@ export default function ViewEventPage() {
       const { data: eventData, error: eventError } = await supabase
         .from("events")
         .select(
-          "id, title, slug, description, event_date, event_type, location, user_id, invite_code, items(id, title, price_cents, current_amount_cents, product_link, image_url)"
+          "id, title, slug, description, event_date, event_type, location, user_id, invite_code, items(id, title, price_cents, current_amount_cents, product_link, image_url, is_fulfilled, fulfilled_at)"
         )
         .eq("slug", slug)
         .single();
@@ -602,6 +607,17 @@ export default function ViewEventPage() {
   const handleDeleteClick = (item) => {
     setItemToDelete(item);
     setDeleteDialogOpen(true);
+  };
+
+  // Redemption handlers
+  const handleRedeemClick = (item) => {
+    setItemToRedeem(item);
+    setShowRedemptionModal(true);
+  };
+
+  const handleCloseRedemptionModal = () => {
+    setShowRedemptionModal(false);
+    setItemToRedeem(null);
   };
 
   const handleCloseDeleteDialog = () => {
@@ -1229,11 +1245,21 @@ export default function ViewEventPage() {
                       const price = item.price_cents || 0;
                       const raised = item.current_amount_cents || 0;
                       const itemFunded = raised >= price && price > 0;
+                      const isFulfilled = item.is_fulfilled;
                       return (
                         <div
                           key={item.id}
-                          className="bg-white rounded-lg shadow-md flex flex-col min-h-[350px]"
+                          className="bg-white rounded-lg shadow-md flex flex-col min-h-[350px] relative"
                         >
+                          {/* Fulfilled badge */}
+                          {isFulfilled && (
+                            <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg z-10 flex items-center gap-1">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              Redeemed
+                            </div>
+                          )}
                           {item.image_url ? (
                             <div className="h-44 w-full bg-gray-100 rounded-t-lg flex items-center justify-center overflow-hidden">
                               <img
@@ -1297,24 +1323,48 @@ export default function ViewEventPage() {
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 mt-4">
+                            <div className="flex flex-col gap-2 mt-4">
                               {isOwner ? (
-                                <div className="flex gap-2 w-full">
-                                  <button
-                                    onClick={() => handleEditItem(item)}
-                                    disabled={itemLoading || editingItemId === item.id}
-                                    className="flex-1 bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-2 rounded font-semibold text-sm transition disabled:opacity-50"
-                                  >
-                                    Edit
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteClick(item)}
-                                    disabled={itemLoading || editingItemId === item.id}
-                                    className="flex-1 bg-red-100 text-red-700 hover:bg-red-200 px-3 py-2 rounded font-semibold text-sm transition disabled:opacity-50"
-                                  >
-                                    Delete
-                                  </button>
-                                </div>
+                                <>
+                                  {/* Redeem button - shown only when fully funded and not yet redeemed */}
+                                  {itemFunded && !isFulfilled && (
+                                    <button
+                                      onClick={() => handleRedeemClick(item)}
+                                      className="w-full bg-gradient-to-r from-green-500 to-blue-600 text-white px-4 py-3 rounded-lg font-bold hover:from-green-600 hover:to-blue-700 transition shadow-lg flex items-center justify-center gap-2"
+                                    >
+                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                      Redeem ${((raised / 100) * 0.95).toFixed(2)}
+                                    </button>
+                                  )}
+                                  {/* Already redeemed message */}
+                                  {isFulfilled && (
+                                    <div className="w-full bg-green-50 border-2 border-green-500 text-green-800 px-4 py-3 rounded-lg font-semibold flex items-center justify-center gap-2">
+                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                      Funds Redeemed
+                                    </div>
+                                  )}
+                                  {/* Edit/Delete buttons */}
+                                  <div className="flex gap-2 w-full">
+                                    <button
+                                      onClick={() => handleEditItem(item)}
+                                      disabled={itemLoading || editingItemId === item.id}
+                                      className="flex-1 bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-2 rounded font-semibold text-sm transition disabled:opacity-50"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteClick(item)}
+                                      disabled={itemLoading || editingItemId === item.id}
+                                      className="flex-1 bg-red-100 text-red-700 hover:bg-red-200 px-3 py-2 rounded font-semibold text-sm transition disabled:opacity-50"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </>
                               ) : (
                                 <button
                                   onClick={() => setSelectedItem(item)}
@@ -1375,6 +1425,17 @@ export default function ViewEventPage() {
                 eventId={event?.id}
                 userId={user?.id}
                 onItemAdded={handleItemAdded}
+            />
+        )}
+
+        {/* --- Redemption Modal --- */}
+        {mounted && showRedemptionModal && itemToRedeem && (
+            <RedemptionModal
+                isOpen={true}
+                onClose={handleCloseRedemptionModal}
+                item={itemToRedeem}
+                eventId={event?.id}
+                userId={user?.id}
             />
         )}
       </div>
