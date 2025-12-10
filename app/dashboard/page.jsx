@@ -17,10 +17,12 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true); // Desktop: open by default
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Mobile: closed by default
   const [activeFilter, setActiveFilter] = useState("all"); // "all", "upcoming"
-  const [activeTab, setActiveTab] = useState("my-events"); // "my-events", "joined"
+  const [activeTab, setActiveTab] = useState("my-events"); // "my-events", "joined", "fulfillments", "invitations"
   const [joinedEvents, setJoinedEvents] = useState([]);
   const [pendingInvitations, setPendingInvitations] = useState([]);
   const [respondingToInvite, setRespondingToInvite] = useState(null);
+  const [fulfillments, setFulfillments] = useState([]);
+  const [loadingFulfillments, setLoadingFulfillments] = useState(false);
 
   // Helper function to get user's first name
   function getFirstName(user) {
@@ -103,6 +105,7 @@ export default function DashboardPage() {
         fetchEvents(currentSession.user.id);
         fetchJoinedEvents(currentSession.user.id);
         fetchPendingInvitations(currentSession.user.id);
+        fetchFulfillments();
       } catch (error) {
         console.error('Error getting session:', error);
         if (!ignore) {
@@ -126,12 +129,14 @@ export default function DashboardPage() {
           fetchEvents(session.user.id);
           fetchJoinedEvents(session.user.id);
           fetchPendingInvitations(session.user.id);
+          fetchFulfillments();
         } else if (event === "SIGNED_IN" && session?.user) {
           // User signed in, update user and fetch events
           setUser(session.user);
           fetchEvents(session.user.id);
           fetchJoinedEvents(session.user.id);
           fetchPendingInvitations(session.user.id);
+          fetchFulfillments();
         }
       }
     );
@@ -328,6 +333,39 @@ export default function DashboardPage() {
     }
   }
 
+  async function fetchFulfillments() {
+    setLoadingFulfillments(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setFulfillments([]);
+        setLoadingFulfillments(false);
+        return;
+      }
+
+      const response = await fetch('/api/fulfillments', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      if (!response.ok) {
+        console.warn('Could not fetch fulfillments');
+        setFulfillments([]);
+        setLoadingFulfillments(false);
+        return;
+      }
+
+      const data = await response.json();
+      setFulfillments(data.fulfillments || []);
+    } catch (error) {
+      console.error('Error fetching fulfillments:', error);
+      setFulfillments([]);
+    } finally {
+      setLoadingFulfillments(false);
+    }
+  }
+
   // Handle invitation response (accept/decline)
   async function handleInvitationResponse(invitationId, action) {
     setRespondingToInvite(invitationId);
@@ -418,17 +456,21 @@ export default function DashboardPage() {
     if (activeTab === "joined") {
       return joinedEvents;
     }
-    // For "my-events" tab, apply filter
-    return events.filter((event) => {
-      if (activeFilter === "upcoming") {
+    if (activeTab === "upcoming") {
+      // Show events within the next 7 days
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const sevenDaysFromNow = new Date(today);
+      sevenDaysFromNow.setDate(today.getDate() + 7);
+
+      return events.filter((event) => {
         if (!event.event_date) return false;
         const eventDate = new Date(event.event_date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return eventDate >= today;
-      }
-      return true;
-    });
+        return eventDate >= today && eventDate <= sevenDaysFromNow;
+      });
+    }
+    // For "my-events" tab, show all events
+    return events;
   };
 
   const displayEvents = getDisplayEvents();
@@ -441,7 +483,9 @@ export default function DashboardPage() {
       const eventDate = new Date(event.event_date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      return eventDate >= today;
+      const sevenDaysFromNow = new Date(today);
+      sevenDaysFromNow.setDate(today.getDate() + 7);
+      return eventDate >= today && eventDate <= sevenDaysFromNow;
     }).length,
     totalRaised: events.reduce((sum, event) => sum + (event.totalRaised || 0), 0),
     totalItems: events.reduce((sum, event) => sum + (event.itemCount || 0), 0),
@@ -469,17 +513,13 @@ export default function DashboardPage() {
     }
   };
 
-  // Helper function to get gradient class based on event index
-  const getEventGradient = (index) => {
-    const gradients = [
-      'from-pink-50 to-rose-50 border-pink-200',
-      'from-purple-50 to-indigo-50 border-purple-200',
-      'from-blue-50 to-cyan-50 border-blue-200',
-      'from-yellow-50 to-amber-50 border-yellow-200',
-      'from-emerald-50 to-teal-50 border-emerald-200',
-      'from-orange-50 to-red-50 border-orange-200',
-    ];
-    return gradients[index % gradients.length];
+  // Helper function to get styling based on event type
+  const getEventStyling = (eventType) => {
+    if (eventType === 'casual-meetup') {
+      return 'from-teal-50 to-cyan-50 border-teal-200';
+    }
+    // Default: gift-registry or special ceremony
+    return 'from-pink-50 to-purple-50 border-purple-200';
   };
 
   // Navigation menu items
@@ -494,6 +534,18 @@ export default function DashboardPage() {
         </svg>
       ),
       count: events.length,
+    },
+    {
+      name: "Upcoming Events",
+      href: "/dashboard",
+      tab: "upcoming",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      ),
+      count: stats.upcomingEvents,
+      highlight: stats.upcomingEvents > 0,
     },
     {
       name: "Joined Events",
@@ -517,6 +569,17 @@ export default function DashboardPage() {
       ),
       count: pendingInvitations.length,
       highlight: pendingInvitations.length > 0,
+    },
+    {
+      name: "Redemptions",
+      href: "/dashboard",
+      tab: "fulfillments",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      count: fulfillments.length,
     },
     {
       name: "Contacts",
@@ -725,62 +788,6 @@ export default function DashboardPage() {
               </Link>
             </div>
 
-            {/* Stats Cards */}
-            {!loading && events.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                {/* Total Events Card */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-purple-100 hover:shadow-xl transition-all transform hover:-translate-y-1">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                      </svg>
-                    </div>
-                  </div>
-                  <p className="text-3xl font-bold text-gray-900 mb-1">{stats.totalEvents}</p>
-                  <p className="text-sm text-gray-900">Total Events</p>
-                </div>
-
-                {/* Upcoming Events Card */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-pink-100 hover:shadow-xl transition-all transform hover:-translate-y-1">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <p className="text-3xl font-bold text-gray-900 mb-1">{stats.upcomingEvents}</p>
-                  <p className="text-sm text-gray-900">Upcoming Events</p>
-                </div>
-
-                {/* Total Raised Card */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-blue-100 hover:shadow-xl transition-all transform hover:-translate-y-1">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <p className="text-3xl font-bold text-gray-900 mb-1">${(stats.totalRaised / 100).toFixed(2)}</p>
-                  <p className="text-sm text-gray-900">Total Raised</p>
-                </div>
-
-                {/* Total Items Card */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-yellow-100 hover:shadow-xl transition-all transform hover:-translate-y-1">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                      </svg>
-                    </div>
-                  </div>
-                  <p className="text-3xl font-bold text-gray-900 mb-1">{stats.totalItems}</p>
-                  <p className="text-sm text-gray-900">Total Items</p>
-                </div>
-              </div>
-            )}
 
             {/* Loading state */}
             {loading ? (
@@ -865,12 +872,102 @@ export default function DashboardPage() {
                       </div>
                     )}
                   </div>
+                ) : activeTab === "fulfillments" ? (
+                  /* Fulfillments Tab Content */
+                  <div className="space-y-4">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">Redemption History</h2>
+                    {loadingFulfillments ? (
+                      <div className="flex justify-center py-12">
+                        <div className="flex flex-col items-center gap-4">
+                          <div className="w-12 h-12 border-4 border-green-200 border-t-green-600 rounded-full animate-spin"></div>
+                          <p className="text-sm font-medium text-gray-900">Loading redemptions...</p>
+                        </div>
+                      </div>
+                    ) : fulfillments.length === 0 ? (
+                      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 text-center border border-green-100">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-200 to-blue-200 flex items-center justify-center">
+                          <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No redemptions yet</h3>
+                        <p className="text-gray-900">When you redeem funds from fully funded items, they will appear here.</p>
+                      </div>
+                    ) : (
+                      <div className="grid gap-4">
+                        {fulfillments.map((fulfillment) => {
+                          const statusConfig = {
+                            pending: { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700', badge: 'bg-yellow-100 text-yellow-800', icon: '⏳', label: 'Pending' },
+                            processing: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', badge: 'bg-blue-100 text-blue-800', icon: '🔄', label: 'Processing' },
+                            completed: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', badge: 'bg-green-100 text-green-800', icon: '✅', label: 'Completed' },
+                            failed: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', badge: 'bg-red-100 text-red-800', icon: '❌', label: 'Failed' }
+                          };
+                          const config = statusConfig[fulfillment.status] || statusConfig.pending;
+
+                          return (
+                            <div
+                              key={fulfillment.id}
+                              className={`${config.bg} backdrop-blur-sm rounded-xl p-5 shadow-lg border ${config.border} hover:shadow-xl transition-all`}
+                            >
+                              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <h3 className="text-lg font-bold text-gray-900">
+                                      {fulfillment.item?.title || "Item"}
+                                    </h3>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${config.badge}`}>
+                                      {config.icon} {config.label}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-gray-900 mb-2">
+                                    <span className="font-medium">Event:</span> {fulfillment.event?.title || "Unknown"}
+                                  </p>
+                                  <div className="flex flex-wrap gap-3 text-sm text-gray-900">
+                                    <span className="flex items-center gap-1">
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                      Net: <span className="font-semibold text-green-700">${(fulfillment.net_amount_cents / 100).toFixed(2)}</span>
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                      </svg>
+                                      {new Date(fulfillment.requested_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </span>
+                                    {fulfillment.completed_at && (
+                                      <span className="flex items-center gap-1 text-green-700">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Completed {new Date(fulfillment.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-2xl font-bold text-gray-900">
+                                    ${(fulfillment.net_amount_cents / 100).toFixed(2)}
+                                  </p>
+                                  <p className="text-xs text-gray-600">
+                                    Fee: ${(fulfillment.platform_fee_cents / 100).toFixed(2)}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 ) : displayEvents.length === 0 ? (
                   <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-12 text-center border border-purple-100">
                     <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
                       <svg className="w-10 h-10 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         {activeTab === "joined" ? (
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        ) : activeTab === "upcoming" ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         ) : (
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         )}
@@ -879,18 +976,18 @@ export default function DashboardPage() {
                     <h2 className="text-2xl font-bold text-gray-900 mb-3">
                       {activeTab === "joined"
                         ? "No joined events yet"
-                        : activeFilter === "upcoming"
-                        ? "No upcoming events"
+                        : activeTab === "upcoming"
+                        ? "No events in the next 7 days"
                         : "Start your first celebration!"}
                     </h2>
                     <p className="text-gray-900 mb-6 max-w-md mx-auto">
                       {activeTab === "joined"
                         ? "When you accept an invitation or join an event, it will appear here."
-                        : activeFilter === "upcoming"
-                        ? "You don't have any upcoming events. Create one to get started!"
+                        : activeTab === "upcoming"
+                        ? "You don't have any events coming up within the next 7 days."
                         : "Create a gift registry and let friends contribute to make your special day unforgettable."}
                     </p>
-                    {activeTab !== "joined" && (
+                    {activeTab !== "joined" && activeTab !== "upcoming" && (
                       <Link
                         href="/create-event"
                         className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 inline-flex items-center gap-2"
@@ -908,10 +1005,14 @@ export default function DashboardPage() {
                     {activeTab === "joined" && (
                       <h2 className="text-xl font-bold text-gray-900 mb-4">Events You've Joined</h2>
                     )}
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {/* Section Header for Upcoming Events */}
+                    {activeTab === "upcoming" && (
+                      <h2 className="text-xl font-bold text-gray-900 mb-4">Upcoming Events (Next 7 Days)</h2>
+                    )}
+                    <div className="grid gap-6 md:grid-cols-2">
                       {displayEvents.map((event, index) => {
                         const dateInfo = formatEventDate(event.event_date);
-                        const gradientClass = getEventGradient(index);
+                        const gradientClass = getEventStyling(event.event_type);
                         return (
                           <div
                             key={event.id}

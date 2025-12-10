@@ -716,16 +716,6 @@ export default function ViewEventPage() {
           </div>
         )}
 
-        {user && (
-          <div className="mb-6 flex justify-between items-center">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-blue-50 transition border border-blue-200"
-            >
-              ← Dashboard
-            </Link>
-          </div>
-        )}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32">
             <div className="text-gray-900 text-lg animate-pulse">Loading event...</div>
@@ -741,89 +731,65 @@ export default function ViewEventPage() {
           </div>
         ) : (
           <>
-            <div className="mb-10 text-center">
-              <div className="flex flex-col items-center gap-4 mb-4">
-                <h1 className="text-4xl font-bold text-blue-900 mb-2">{event.title}</h1>
-                <button
-                  onClick={handleShare}
-                  className="inline-flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-blue-50 transition border border-blue-200"
-                  title="Copy link to share"
-                >
-                  {copied ? (
-                    <>
-                      <span>✓</span>
-                      <span>Link Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>🔗</span>
-                      <span>Share Event</span>
-                    </>
+            {/* Header with Dashboard, Title, and Share in one row */}
+            <div className="mb-8">
+              <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-4">
+                {/* Left: Dashboard button */}
+                {user && (
+                  <Link
+                    href="/dashboard"
+                    className="inline-flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-blue-50 transition border border-blue-200 self-start"
+                  >
+                    ← Dashboard
+                  </Link>
+                )}
+
+                {/* Center: Title, Date, Event Type */}
+                <div className="flex-1 text-center">
+                  <h1 className="text-3xl lg:text-4xl font-bold text-blue-900 mb-2">{event.title}</h1>
+                  {event.event_date && (
+                    <div className="text-blue-600 text-md font-medium mb-2">
+                      {formatDate(event.event_date)}
+                    </div>
                   )}
-                </button>
-              </div>
-              {event.event_date && (
-                <div className="text-blue-600 text-md font-medium mb-2">
-                  {formatDate(event.event_date)}
+                  <div>
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                      (event.event_type !== 'casual-meetup')
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-green-100 text-green-700'
+                    }`}>
+                      {(event.event_type !== 'casual-meetup') ? '🎁 Gift Registry' : '📍 Casual Meetup'}
+                    </span>
+                  </div>
                 </div>
-              )}
-              <div className="mx-auto max-w-2xl mb-4 text-gray-800 text-lg">
-                {event.description ? (
-                  <div>{event.description}</div>
-                ) : (
-                  <span className="italic text-gray-800">No description.</span>
+
+                {/* Right: Share button */}
+                {user && (
+                  <button
+                    onClick={handleShare}
+                    className="inline-flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-blue-50 transition border border-blue-200 self-start"
+                    title="Copy link to share"
+                  >
+                    {copied ? (
+                      <>
+                        <span>✓</span>
+                        <span>Link Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>🔗</span>
+                        <span>Share Event</span>
+                      </>
+                    )}
+                  </button>
                 )}
               </div>
-              {/* Event type badge */}
-              <div className="mb-3">
-                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                  (event.event_type !== 'casual-meetup')
-                    ? 'bg-purple-100 text-purple-700'
-                    : 'bg-green-100 text-green-700'
-                }`}>
-                  {(event.event_type !== 'casual-meetup') ? '🎁 Gift Registry' : '📍 Casual Meetup'}
-                </span>
-              </div>
 
-              {/* Show total raised/goal only for gift registries */}
-              {(event.event_type !== 'casual-meetup') && (
-                <>
-                  <div className="flex flex-col sm:flex-row sm:justify-center sm:items-center gap-2 mt-2">
-                    <div className="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold text-lg shadow">
-                      Total Raised: ${ (totalRaised / 100).toFixed(2) }
-                    </div>
-                    <div className="bg-blue-100 px-5 py-2 rounded-lg font-medium text-blue-900 shadow">
-                      Goal: ${ (totalGoal / 100).toFixed(2) }
-                    </div>
-                    {isFullyFunded && (
-                      <span className="inline-block bg-green-600 text-white px-4 py-2 rounded-lg font-bold ml-2 shadow animate-bounce">
-                        🎉 Fully Funded!
-                      </span>
-                    )}
-                  </div>
-                  {totalGoal > 0 && (
-                    <div className="w-full max-w-lg mx-auto mt-6">
-                      <div className="w-full bg-gray-200 rounded-full h-4">
-                        <div
-                          className={`h-4 rounded-full transition-all duration-500 ${
-                            isFullyFunded
-                              ? "bg-green-500"
-                              : "bg-blue-400"
-                          }`}
-                          style={{
-                            width: `${
-                              Math.min(100, Math.round((totalRaised / totalGoal) * 100))
-                            }%`,
-                          }}
-                        ></div>
-                      </div>
-                      <div className="flex justify-between text-xs text-gray-900 mt-1">
-                        <span>$0</span>
-                        <span>${(totalGoal / 100).toFixed(2)} Goal</span>
-                      </div>
-                    </div>
-                  )}
-                </>
+              {/* Description below the header */}
+              {event.description && (
+                <div className="mx-auto max-w-3xl text-center text-gray-800 text-lg mt-4">
+                  {event.description}
+                </div>
               )}
             </div>
 

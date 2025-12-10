@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import supabase from "../lib/supabase";
 import LocationSearchModal from "../components/LocationSearchModal";
 
@@ -142,10 +143,18 @@ export default function CreateEventPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8">
-      <div className="bg-white shadow-md rounded-lg px-10 py-8 max-w-md w-full">
-        <h1 className="text-2xl font-bold mb-6 text-center text-gray-900">Create Event</h1>
-        <form onSubmit={handleSubmit} className="space-y-5">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 py-4 px-4">
+      <div className="bg-white shadow-2xl rounded-2xl px-6 sm:px-8 py-6 max-w-4xl w-full max-h-[95vh] overflow-y-auto">
+        <div className="mb-4">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-blue-50 transition border border-blue-200"
+          >
+            ← Dashboard
+          </Link>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">Create Event</h1>
+        <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="title">
                 Event Title <span className="text-red-500">*</span>
@@ -153,7 +162,7 @@ export default function CreateEventPage() {
               <input
                 id="title"
                 type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
+                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
@@ -162,24 +171,74 @@ export default function CreateEventPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="eventType">
+              <label className="block text-sm font-medium mb-2 text-gray-900">
                 Event Type <span className="text-red-500">*</span>
               </label>
-              <select
-                id="eventType"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
-                value={eventType}
-                onChange={(e) => setEventType(e.target.value)}
-                required
-              >
-                <option value="gift-registry">Gift Registry</option>
-                <option value="casual-meetup">Casual Meetup</option>
-              </select>
-              <p className="text-xs text-gray-900 mt-1">
-                {eventType === "gift-registry"
-                  ? "Create a wishlist with items for contributions"
-                  : "Organize a casual gathering with location details"}
-              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Gift Registry Card */}
+                <button
+                  type="button"
+                  onClick={() => setEventType("gift-registry")}
+                  className={`relative p-4 rounded-2xl border-3 transition-all transform hover:scale-105 ${
+                    eventType === "gift-registry"
+                      ? "border-purple-500 bg-gradient-to-br from-pink-50 to-rose-50 shadow-lg ring-2 ring-purple-500"
+                      : "border-gray-200 bg-white hover:border-purple-300 hover:shadow-md"
+                  }`}
+                >
+                  {/* Selected checkmark */}
+                  {eventType === "gift-registry" && (
+                    <div className="absolute top-2 right-2 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
+
+                  {/* Image illustration */}
+                  <div className="mb-3 flex justify-center">
+                    <img
+                      src="/special-ceremony.png"
+                      alt="Special Ceremony"
+                      className="w-40 h-40 object-contain rounded-2xl"
+                    />
+                  </div>
+
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">Special Ceremony</h3>
+                  <p className="text-xs text-gray-600">Birthday, Wedding, etc.</p>
+                </button>
+
+                {/* Casual Meetup Card */}
+                <button
+                  type="button"
+                  onClick={() => setEventType("casual-meetup")}
+                  className={`relative p-4 rounded-2xl border-3 transition-all transform hover:scale-105 ${
+                    eventType === "casual-meetup"
+                      ? "border-teal-500 bg-gradient-to-br from-teal-50 to-cyan-50 shadow-lg ring-2 ring-teal-500"
+                      : "border-gray-200 bg-white hover:border-teal-300 hover:shadow-md"
+                  }`}
+                >
+                  {/* Selected checkmark */}
+                  {eventType === "casual-meetup" && (
+                    <div className="absolute top-2 right-2 w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
+
+                  {/* Image illustration */}
+                  <div className="mb-3 flex justify-center">
+                    <img
+                      src="/casual-meetup.png"
+                      alt="Casual Meet-up"
+                      className="w-40 h-40 object-contain rounded-2xl"
+                    />
+                  </div>
+
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">Casual Meet-up</h3>
+                  <p className="text-xs text-gray-600">Coffee, Hangout, Book Club</p>
+                </button>
+              </div>
             </div>
 
             <div>
@@ -189,7 +248,7 @@ export default function CreateEventPage() {
               <input
                 id="date"
                 type="date"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
+                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
               />
@@ -201,8 +260,8 @@ export default function CreateEventPage() {
               </label>
               <textarea
                 id="description"
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200 resize-vertical"
+                rows={2}
+                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-gray-900"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter event description (optional)"
@@ -259,14 +318,14 @@ export default function CreateEventPage() {
             )}
 
             {error && (
-              <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-md">
+              <div className="text-red-600 text-sm text-center bg-red-50 border-2 border-red-200 p-4 rounded-lg">
                 {error}
               </div>
             )}
 
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-2 rounded-md font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2.5 rounded-xl font-bold hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               disabled={loading}
             >
               {loading ? "Creating Event..." : "Create Event"}
