@@ -59,6 +59,10 @@ export async function POST(request) {
           transfers: { requested: true }
         },
         business_type: 'individual',
+        business_profile: {
+          mcc: '5816', // MCC code for digital goods/marketplaces
+          url: null // No website required for individuals
+        },
         metadata: {
           memora_user_id: userId
         }
@@ -87,7 +91,11 @@ export async function POST(request) {
       account: accountId,
       refresh_url: `${origin}/dashboard?connect=refresh`,
       return_url: `${origin}/dashboard?connect=success`,
-      type: 'account_onboarding'
+      type: 'account_onboarding',
+      collection_options: {
+        fields: 'eventually_due', // Only collect immediately required fields
+        future_requirements: 'omit' // Skip optional future requirements
+      }
     });
 
     return NextResponse.json({
