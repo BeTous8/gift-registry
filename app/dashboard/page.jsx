@@ -173,6 +173,7 @@ export default function DashboardPage() {
         .from("events")
         .select("id, title, slug, event_date, description, items(current_amount_cents)")
         .eq("user_id", userId)
+        .eq("registry_enabled", true)  // Only show registry events
         .order("event_date", { ascending: false });
 
       if (error) {
@@ -186,6 +187,7 @@ export default function DashboardPage() {
               .from("events")
               .select("id, title, slug, event_date, description, items(current_amount_cents)")
               .eq("user_id", refreshData.session.user.id)
+              .eq("registry_enabled", true)  // Only show registry events
               .order("event_date", { ascending: false });
             
             if (retryError) {
