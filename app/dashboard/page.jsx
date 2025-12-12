@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import supabase from "../lib/supabase";
+import MiniCalendar from "../components/MiniCalendar";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -703,6 +704,9 @@ export default function DashboardPage() {
             );
           })}
         </nav>
+
+        {/* Mini Calendar */}
+        <MiniCalendar sidebarOpen={sidebarOpen} />
 
         {/* User Profile Section */}
         <div className="border-t border-purple-100 p-4">

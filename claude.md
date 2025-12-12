@@ -35,39 +35,58 @@
 - ✅ Fixed InviteFromContactsModal stuck in "Inviting..." state
 - ✅ Fixed modal close button calling wrong state setter
 
-### 🚨 NEXT PRIORITY - Fulfillment System (Revenue Activation)
+### ✅ COMPLETED - Fulfillment System (Revenue Activation)
 
-**Status:** Specialist reviews COMPLETE - Critical corrections required before implementation
+**Status:** Implementation COMPLETE - E2E testing deferred until after calendar feature
 **Documents:** See `SPECIALIST_REVIEW_SUMMARY.md`, `FULFILLMENT_CORRECTIONS_QUICKSTART.md`, `supabase_fulfillment_migration_v2_CORRECTED.sql`
 
-**Phase 0: Apply Critical Corrections (REQUIRED FIRST)**
-- [x] @security-auditor - Review COMPLETE (5 critical + 5 high priority issues found)
-- [x] @stripe-specialist - Review COMPLETE (CRITICAL: Must use Express Connect, NOT Standard)
-- [x] @database-expert - Review COMPLETE (3 race conditions fixed)
-- [x] User reviewed and approved corrections
-- [x] Ran corrected database migration (`supabase_fulfillment_migration_v2_FIXED.sql`)
-- [x] Updated environment variables (`.env.local` and Netlify)
-- [x] Stripe Connect enabled (Marketplace model, v1 API)
-- [x] **Day 1 COMPLETE - Express Connect onboarding endpoints implemented**
-
-**Critical Findings:**
-1. ⚠️ **WRONG Stripe Connect Type** - Must use Express (not Standard) - 4 hours to fix
-2. ⚠️ **Platform Fee Loses Money** - Increase from 3% to 5% - 1 hour to fix
-3. ⚠️ **Race Condition in Fulfillment** - Use atomic function - 3 hours to fix
-4. ⚠️ **Missing RLS on Audit Log** - Critical security gap - 1 hour to fix
-5. ⚠️ **No Webhook Deduplication** - Can process duplicates - 2 hours to fix
-
-**Total Fix Time:** ~11 hours (P0 blockers only)
-
-**Revised Timeline (after corrections):**
+**Completed Timeline:**
 - ✅ Day 0: Phase 0 corrections complete (Database + Environment setup)
 - ✅ Day 1: Express Connect onboarding endpoints (COMPLETE - December 9, 2025)
 - ✅ Day 2: Transfer logic + security (COMPLETE - December 9, 2025)
 - ✅ Day 3: UI components - RedemptionModal + Event page integration (COMPLETE - December 10, 2025)
 - ✅ Day 4: Dashboard fulfillment history (COMPLETE - December 10, 2025)
-- **→ Day 5: E2E testing + production prep** (NEXT - Launch Ready)
+- ⏸️ Day 5: E2E testing + production prep (DEFERRED - will test with calendar feature)
 
-**Revenue Impact:** ~$1,800/year (Year 1) → ~$18,000/year (Year 2) [Updated with 5% fee]
+**Revenue Impact:** ~$1,800/year (Year 1) → ~$18,000/year (Year 2) [5% platform fee]
+
+---
+
+### 🚨 CURRENT PRIORITY - Calendar & Registry Unification
+
+**Status:** ✅ Phase 6 COMPLETE (Security audit done) → Ready for Phase 0 (Database backup)
+**Implementation Plan:** See `C:\Users\bntou\.claude\plans\zany-beaming-scott.md`
+**Estimated Time:** 20-30 hours total (7 phases)
+
+**What Changed:**
+- ✅ Phases 1-5: Calendar feature fully implemented (`user_events` table, API routes, UI components)
+- ✅ Phase 6: Security audit completed - all critical vulnerabilities fixed
+- **Decision:** Merge calendar and registry systems into unified `events` table (Option 3: Tight Integration)
+
+**Key Design Decisions:**
+1. **Single `events` table** with `registry_enabled` flag (replaces separate `user_events` table)
+2. **Recurring events CAN have registries** - but registry is one-time, creates NEW registry each year
+3. **Unified creation modal** - same modal for both Dashboard and Calendar
+4. **Calendar invitations** - reuse existing `invitations` table for calendar-only events
+5. **Annual renewal** - invitations must be renewed yearly (not perpetual)
+
+**Implementation Phases:**
+- [ ] Phase 0: Database backup and rollback script (NEXT)
+- [ ] Phase 1: Database schema migration (merge user_events → events)
+- [ ] Phase 2: API consolidation (unified endpoints with `?type=` parameter)
+- [ ] Phase 3: Frontend updates (unified CreateEventModal component)
+- [ ] Phase 4: Invitation system extension
+- [ ] Phase 5: "Spawn Registry from Recurring" feature
+- [ ] Phase 6: Testing (6 manual test cases)
+- [ ] Phase 7: Production deployment
+
+**Critical Files:**
+- Plan: `C:\Users\bntou\.claude\plans\zany-beaming-scott.md`
+- Migration: `supabase_unified_events_migration.sql` (to be created)
+- Backup: `supabase_unified_migration_backup.sql` (to be created)
+- Security fixes: `supabase_calendar_security_fix.sql` (already applied)
+
+**Next Action:** Create database backup script for Phase 0
 
 ---
 
@@ -111,11 +130,14 @@
 
 ### Before Going Live
 - [ ] Fix join page auth issue
-- [ ] End-to-end test: Create event → Invite → Join → Contribute
+- [ ] **Combined E2E Testing (Fulfillment + Calendar):**
+  - [ ] Fulfillment flow: Create event → Fund item → Redeem to bank account
+  - [ ] Calendar flow: Create recurring event → Verify display → Edit/delete
+  - [ ] Test calendar event creation from gift registry events
 - [ ] Update Netlify environment variables
 - [ ] Switch Stripe to LIVE mode
 - [ ] Configure production webhook endpoint
-- [ ] Test with real $1 payment
+- [ ] Test with real $1 payment (fulfillment redemption)
 - [ ] Cross-browser testing (Safari, Firefox, Edge)
 - [ ] Mobile device testing (iOS/Android)
 - [ ] SEO optimization (meta tags, og:images)
@@ -166,21 +188,27 @@ For detailed historical information, see:
 ---
 
 ## 🔄 Last Updated
-**Date:** 2025-12-10
+**Date:** 2025-12-11
 **Status:**
 - ✅ Google Places & Event Types COMPLETE
 - ✅ Edit Location feature COMPLETE
 - ✅ Custom domain email setup COMPLETE
 - ✅ UX Improvements COMPLETE (Amazon auto-fill, delete members, mobile font fixes)
 - ✅ Next.js Security Upgrade COMPLETE (v16.0.8 - Netlify security fix)
-- ✅ Fulfillment Day 0 COMPLETE (Database migration + Environment setup)
-- ✅ Fulfillment Day 1 COMPLETE (Express Connect onboarding endpoints)
-- ✅ Fulfillment Day 2 COMPLETE (Transfer logic, webhooks, security)
-- ✅ Fulfillment Day 3 COMPLETE (RedemptionModal, event page integration, fulfillment status display)
-- ✅ Fulfillment Day 4 COMPLETE (Dashboard redemption history with status tracking)
-- 🎯 Fulfillment Day 5 NEXT (E2E testing + production prep)
+- ✅ Fulfillment System COMPLETE (Implementation done - E2E testing deferred)
+  - ✅ Day 0-4: All implementation phases complete
+  - ⏸️ Day 5: E2E testing deferred (will test with calendar unification)
+- ✅ Calendar Feature COMPLETE (Phases 1-6 done)
+  - ✅ Database schema, API routes, UI components, security audit
+- 🎯 Calendar & Registry Unification IN PROGRESS (Current priority - 20-30 hours)
+  - Detailed plan: `C:\Users\bntou\.claude\plans\zany-beaming-scott.md`
+  - Next: Phase 0 (Database backup script)
 
-**Next Action:** End-to-end testing of full redemption flow + prepare for production launch
+**Next Action:**
+1. Phase 0: Create database backup and rollback script
+2. Phase 1-7: Execute unified migration per implementation plan
+3. Combined E2E testing for fulfillment + unified events system
+4. Production launch prep
 
 ---
 
