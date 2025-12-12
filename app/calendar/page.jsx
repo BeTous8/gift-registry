@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import supabase from "../lib/supabase";
 import Link from "next/link";
+import CreateEventModal from "../components/CreateEventModal";
 
 /**
  * Sanitizes text for safe display (XSS prevention)
@@ -30,6 +31,7 @@ export default function CalendarPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null); // For prefilling date when clicking a day
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -257,6 +259,15 @@ export default function CalendarPage() {
     setShowEditModal(true);
   }
 
+  // Handle clicking on a date square to create event
+  function handleDateClick(day) {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const dateStr = new Date(year, month, day).toISOString().split('T')[0];
+    setSelectedDate(dateStr);
+    setShowAddModal(true);
+  }
+
   const monthDays = getMonthDays();
   const monthName = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
@@ -345,9 +356,10 @@ export default function CalendarPage() {
             return (
               <div
                 key={day}
+                onClick={() => handleDateClick(day)}
                 className={`
                   aspect-square border rounded-lg p-2 overflow-hidden
-                  ${isToday ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}
+                  ${isToday ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50'}
                   transition cursor-pointer
                 `}
               >
@@ -358,7 +370,10 @@ export default function CalendarPage() {
                   {dayEvents.map(event => (
                     <div
                       key={event.id}
-                      onClick={() => openEditModal(event)}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent date click when clicking event
+                        openEditModal(event);
+                      }}
                       className={`
                         text-xs px-2 py-1 rounded cursor-pointer truncate
                         ${event.event_type === 'ceremony'
@@ -395,90 +410,24 @@ export default function CalendarPage() {
 
       {/* Add Event Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Add New Event</h2>
-            <form onSubmit={handleAddEvent} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">Title *</label>
-                <input
-                  type="text"
-                  required
-                  maxLength={200}
-                  value={formData.title}
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="e.g., Mom's Birthday"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">Description</label>
-                <textarea
-                  maxLength={1000}
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="Optional details"
-                  rows={3}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">Date *</label>
-                <input
-                  type="date"
-                  required
-                  value={formData.event_date}
-                  onChange={(e) => setFormData({...formData, event_date: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">Event Type *</label>
-                <select
-                  value={formData.event_type}
-                  onChange={(e) => setFormData({...formData, event_type: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                >
-                  <option value="ceremony">Important (Birthday, Anniversary)</option>
-                  <option value="casual">Casual (Meetup, Coffee)</option>
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="is_recurring"
-                  checked={formData.is_recurring}
-                  onChange={(e) => setFormData({...formData, is_recurring: e.target.checked})}
-                  className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                />
-                <label htmlFor="is_recurring" className="text-sm text-gray-900">
-                  Repeat yearly (e.g., birthdays, anniversaries)
-                </label>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-900 hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg hover:from-pink-600 hover:to-purple-700 transition disabled:opacity-50"
-                >
-                  {submitting ? 'Adding...' : 'Add Event'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <CreateEventModal
+          defaultMode="calendar"
+          prefillData={selectedDate ? { event_date: selectedDate } : {}}
+          onClose={() => {
+            setShowAddModal(false);
+            setSelectedDate(null); // Clear selected date
+          }}
+          onSuccess={(newEvent) => {
+            // Refresh events after creation
+            fetchEvents();
+            setSelectedDate(null); // Clear selected date
+            // If registry was created, optionally redirect to it
+            if (newEvent.slug) {
+              // User can stay on calendar or navigate to registry
+              // For now, just show success and refresh calendar
+            }
+          }}
+        />
       )}
 
       {/* Edit Event Modal */}

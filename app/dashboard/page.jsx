@@ -5,6 +5,8 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import supabase from "../lib/supabase";
 import MiniCalendar from "../components/MiniCalendar";
+import CreateEventModal from "../components/CreateEventModal";
+import { parseLocalDate, formatDateString, getDaysUntil, isWithinDays } from "../lib/dateUtils";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -24,6 +26,7 @@ export default function DashboardPage() {
   const [respondingToInvite, setRespondingToInvite] = useState(null);
   const [fulfillments, setFulfillments] = useState([]);
   const [loadingFulfillments, setLoadingFulfillments] = useState(false);
+  const [showCreateEventModal, setShowCreateEventModal] = useState(false);
 
   // Helper function to get user's first name
   function getFirstName(user) {
@@ -461,15 +464,9 @@ export default function DashboardPage() {
     }
     if (activeTab === "upcoming") {
       // Show events within the next 7 days
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const sevenDaysFromNow = new Date(today);
-      sevenDaysFromNow.setDate(today.getDate() + 7);
-
       return events.filter((event) => {
         if (!event.event_date) return false;
-        const eventDate = new Date(event.event_date);
-        return eventDate >= today && eventDate <= sevenDaysFromNow;
+        return isWithinDays(event.event_date, 7);
       });
     }
     // For "my-events" tab, show all events
@@ -483,12 +480,7 @@ export default function DashboardPage() {
     totalEvents: events.length,
     upcomingEvents: events.filter((event) => {
       if (!event.event_date) return false;
-      const eventDate = new Date(event.event_date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const sevenDaysFromNow = new Date(today);
-      sevenDaysFromNow.setDate(today.getDate() + 7);
-      return eventDate >= today && eventDate <= sevenDaysFromNow;
+      return isWithinDays(event.event_date, 7);
     }).length,
     totalRaised: events.reduce((sum, event) => sum + (event.totalRaised || 0), 0),
     totalItems: events.reduce((sum, event) => sum + (event.itemCount || 0), 0),
@@ -497,14 +489,10 @@ export default function DashboardPage() {
   // Helper function to format date with relative time
   const formatEventDate = (dateString) => {
     if (!dateString) return null;
-    const eventDate = new Date(dateString);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const diffTime = eventDate - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+    const diffDays = getDaysUntil(dateString);
+
     if (diffDays < 0) {
-      return { text: eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), status: 'past' };
+      return { text: formatDateString(dateString), status: 'past' };
     } else if (diffDays === 0) {
       return { text: 'Today! 🎉', status: 'today' };
     } else if (diffDays === 1) {
@@ -512,7 +500,7 @@ export default function DashboardPage() {
     } else if (diffDays <= 7) {
       return { text: `In ${diffDays} days`, status: 'upcoming' };
     } else {
-      return { text: eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), status: 'future' };
+      return { text: formatDateString(dateString), status: 'future' };
     }
   };
 
@@ -605,7 +593,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="h-screen bg-gray-50 flex overflow-hidden">
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div
@@ -622,14 +610,14 @@ export default function DashboardPage() {
           transition-all duration-300 ease-in-out
           ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           ${sidebarOpen ? "w-64" : "w-20"}
-          flex flex-col
+          flex flex-col h-screen
           shadow-lg lg:shadow-none
         `}
       >
         {/* Logo/Brand Section */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-purple-100">
+        <div className="h-14 flex items-center justify-between px-4 border-b border-purple-100 flex-shrink-0">
           {sidebarOpen && (
-            <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
+            <h2 className="text-lg font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
               Memora 🎉
             </h2>
           )}
@@ -638,7 +626,7 @@ export default function DashboardPage() {
               setSidebarOpen(!sidebarOpen);
               if (!sidebarOpen) setMobileMenuOpen(false);
             }}
-            className="p-2 rounded-md hover:bg-gray-100 transition text-gray-900 hover:text-gray-900"
+            className="p-1.5 rounded-md hover:bg-gray-100 transition text-gray-900 hover:text-gray-900"
             aria-label="Toggle sidebar"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -651,8 +639,8 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Navigation Items */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        {/* Navigation Items - Fixed height, no scroll */}
+        <nav className="px-3 py-3 space-y-0.5 flex-shrink-0">
           {navItems.map((item) => {
             const isActive = item.tab
               ? activeTab === item.tab
@@ -670,7 +658,7 @@ export default function DashboardPage() {
                   setMobileMenuOpen(false);
                 }}
                 className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-lg
+                  flex items-center gap-2.5 px-3 py-2 rounded-lg
                   transition-all duration-200 relative
                   ${
                     isActive
@@ -707,14 +695,19 @@ export default function DashboardPage() {
           })}
         </nav>
 
-        {/* Mini Calendar */}
-        <MiniCalendar sidebarOpen={sidebarOpen} />
+        {/* Spacer to push MiniCalendar and User Profile to bottom */}
+        <div className="flex-1"></div>
 
-        {/* User Profile Section */}
-        <div className="border-t border-purple-100 p-4">
+        {/* Mini Calendar - Always visible at bottom */}
+        <div className="flex-shrink-0">
+          <MiniCalendar sidebarOpen={sidebarOpen} />
+        </div>
+
+        {/* User Profile Section - Always visible at bottom */}
+        <div className="border-t border-purple-100 p-3 flex-shrink-0">
           {sidebarOpen ? (
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shadow-md">
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shadow-md">
                 <span className="text-white font-semibold text-sm">
                   {user?.email?.charAt(0).toUpperCase() || "U"}
                 </span>
@@ -723,12 +716,12 @@ export default function DashboardPage() {
                 <p className="text-sm font-medium text-gray-900 truncate">
                   {user?.email || "User"}
                 </p>
-                <p className="text-xs text-gray-900 truncate">Account</p>
+                <p className="text-xs text-gray-600 truncate">Account</p>
               </div>
             </div>
           ) : (
-            <div className="flex justify-center mb-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shadow-md">
+            <div className="flex justify-center mb-2">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shadow-md">
                 <span className="text-white font-semibold text-sm">
                   {user?.email?.charAt(0).toUpperCase() || "U"}
                 </span>
@@ -738,23 +731,23 @@ export default function DashboardPage() {
           <button
             onClick={handleSignOut}
             className={`
-              w-full flex items-center gap-3 px-3 py-2 rounded-lg
-              text-red-600 hover:bg-red-50 transition
+              w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg
+              text-red-600 hover:bg-red-50 transition text-sm
               ${!sidebarOpen && "justify-center"}
             `}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-            {sidebarOpen && <span className="text-sm font-medium">Sign Out</span>}
+            {sidebarOpen && <span className="font-medium">Sign Out</span>}
           </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         {/* Mobile Header */}
-        <header className="lg:hidden bg-white/90 backdrop-blur-sm border-b border-purple-100 px-4 py-3 flex items-center justify-between">
+        <header className="lg:hidden bg-white/90 backdrop-blur-sm border-b border-purple-100 px-4 py-3 flex items-center justify-between flex-shrink-0">
           <button
             onClick={() => setMobileMenuOpen(true)}
             className="p-2 rounded-md hover:bg-purple-50 text-gray-900 transition"
@@ -770,31 +763,32 @@ export default function DashboardPage() {
           <div className="w-10" /> {/* Spacer for centering */}
         </header>
 
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 min-h-full">
-          <div className="p-4 lg:p-8">
-            {/* Desktop Header */}
-            <div className="hidden lg:flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
-                  {user ? (getFirstName(user) ? `Welcome, ${getFirstName(user)}! 🎉` : 'Dashboard') : 'Dashboard'}
-                </h1>
-                {user && (
-                  <p className="text-gray-900 text-sm mt-2">{user.email}</p>
-                )}
-              </div>
-              <Link
-                href="/create-event"
-                className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 mt-4 sm:mt-0 flex items-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Create New Event
-              </Link>
+        {/* Desktop Header - Fixed */}
+        <header className="hidden lg:flex bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 px-8 py-6 border-b border-purple-100/50 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full">
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
+                {user ? (getFirstName(user) ? `Welcome, ${getFirstName(user)}! 🎉` : 'Dashboard') : 'Dashboard'}
+              </h1>
+              {user && (
+                <p className="text-gray-900 text-sm mt-2">{user.email}</p>
+              )}
             </div>
+            <button
+              onClick={() => setShowCreateEventModal(true)}
+              className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 mt-4 sm:mt-0 flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Create New Event
+            </button>
+          </div>
+        </header>
 
-
+        {/* Main Content - Scrollable */}
+        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+          <div className="p-4 lg:p-8">
             {/* Loading state */}
             {loading ? (
               <div className="flex justify-center py-24">
@@ -842,7 +836,7 @@ export default function DashboardPage() {
                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                       </svg>
-                                      {new Date(invitation.events.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                      {formatDateString(invitation.events.event_date)}
                                     </span>
                                   )}
                                   {invitation.events?.owner_name && (
@@ -939,14 +933,14 @@ export default function DashboardPage() {
                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                       </svg>
-                                      {new Date(fulfillment.requested_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                      {formatDateString(fulfillment.requested_at.split('T')[0])}
                                     </span>
                                     {fulfillment.completed_at && (
                                       <span className="flex items-center gap-1 text-green-700">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                         </svg>
-                                        Completed {new Date(fulfillment.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                        Completed {formatDateString(fulfillment.completed_at.split('T')[0], { month: 'short', day: 'numeric' })}
                                       </span>
                                     )}
                                   </div>
@@ -1147,6 +1141,24 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Create Event Modal */}
+        {showCreateEventModal && (
+          <CreateEventModal
+            defaultMode="registry"
+            onClose={() => setShowCreateEventModal(false)}
+            onSuccess={(newEvent) => {
+              // Refresh events after creation
+              if (user) {
+                fetchEvents(user.id);
+              }
+              // If registry was created, redirect to the event page
+              if (newEvent.slug) {
+                router.push(`/event/${newEvent.slug}`);
+              }
+            }}
+          />
         )}
       </div>
     </div>

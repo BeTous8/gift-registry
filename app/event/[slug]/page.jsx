@@ -10,6 +10,7 @@ import LocationSearchModal from "../../components/LocationSearchModal";
 import InviteFromContactsModal from "../../components/InviteFromContactsModal";
 import AddItemModal from "../../components/AddItemModal";
 import RedemptionModal from "../../components/RedemptionModal";
+import { parseLocalDate } from "../../lib/dateUtils";
 
 export default function ViewEventPage() {
   const { slug } = useParams();
@@ -468,7 +469,8 @@ export default function ViewEventPage() {
 
   function formatDate(dateStr) {
     if (!dateStr) return null;
-    const date = new Date(dateStr);
+    const date = parseLocalDate(dateStr);
+    if (!date) return null;
     return date.toLocaleDateString(undefined, {
       year: "numeric",
       month: "long",

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import supabase from "../lib/supabase";
 import Link from "next/link";
+import { parseLocalDate } from "../lib/dateUtils";
 
 /**
  * Sanitizes text for safe display (XSS prevention)
@@ -195,7 +196,7 @@ export default function MiniCalendar({ sidebarOpen }) {
             <div
               key={day}
               className={`
-                aspect-square flex flex-col items-center justify-center text-xs rounded-md
+                aspect-square flex flex-col items-center justify-center text-[11px] rounded-md
                 ${isToday ? 'bg-purple-100 font-bold' : 'hover:bg-purple-50'}
                 transition cursor-pointer relative
               `}
@@ -205,10 +206,10 @@ export default function MiniCalendar({ sidebarOpen }) {
               {dayEvents.length > 0 && (
                 <div className="flex gap-0.5 mt-0.5">
                   {hasRegistry && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500" title="Gift Registry" />
+                    <div className="w-1 h-1 rounded-full bg-purple-500" title="Gift Registry" />
                   )}
                   {hasImportant && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-pink-500" title="Important Event" />
+                    <div className="w-1 h-1 rounded-full bg-pink-500" title="Important Event" />
                   )}
                   {hasCasual && (
                     <div className="w-1.5 h-1.5 rounded-full bg-green-500" title="Casual Event" />
@@ -218,22 +219,6 @@ export default function MiniCalendar({ sidebarOpen }) {
             </div>
           );
         })}
-      </div>
-
-      {/* Legend */}
-      <div className="mt-3 pt-3 border-t border-purple-100 space-y-1">
-        <div className="flex items-center gap-2 text-xs text-gray-900">
-          <div className="w-2 h-2 rounded-full bg-purple-500" />
-          <span>Gift Registry</span>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-gray-900">
-          <div className="w-2 h-2 rounded-full bg-pink-500" />
-          <span>Important</span>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-gray-900">
-          <div className="w-2 h-2 rounded-full bg-green-500" />
-          <span>Casual</span>
-        </div>
       </div>
 
       {/* Link to full calendar */}
