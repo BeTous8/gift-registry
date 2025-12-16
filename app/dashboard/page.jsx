@@ -558,10 +558,10 @@ export default function DashboardPage() {
   // Helper function to get styling based on event category
   const getEventStyling = (eventCategory) => {
     if (eventCategory === 'casual') {
-      return 'from-teal-50 to-cyan-50 border-teal-200';
+      return 'from-[var(--mint-100)] to-[var(--mint-200)] border-[var(--mint-300)]';
     }
     // Default: gift-registry or special ceremony (event_category: "other", "birthday", "anniversary", "wedding")
-    return 'from-pink-50 to-purple-50 border-purple-200';
+    return 'from-[var(--lavender-50)] to-[var(--peach-100)] border-[var(--lavender-200)]';
   };
 
   // Navigation menu items
@@ -645,7 +645,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="h-screen bg-gray-50 flex overflow-hidden">
+    <div className="h-screen bg-[var(--cloud-50)] flex overflow-hidden font-body">
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div
@@ -658,7 +658,7 @@ export default function DashboardPage() {
       <aside
         className={`
           fixed lg:static inset-y-0 left-0 z-50
-          bg-white/95 backdrop-blur-sm border-r border-purple-100
+          bg-white/95 backdrop-blur-sm border-r border-[var(--lavender-200)]
           transition-all duration-300 ease-in-out
           ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           ${sidebarOpen ? "w-64" : "w-20"}
@@ -667,11 +667,12 @@ export default function DashboardPage() {
         `}
       >
         {/* Logo/Brand Section */}
-        <div className="h-14 flex items-center justify-between px-4 border-b border-purple-100 flex-shrink-0">
+        <div className="h-14 flex items-center justify-between px-4 border-b border-[var(--lavender-200)] flex-shrink-0">
           {sidebarOpen && (
-            <h2 className="text-lg font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
-              Memora 🎉
-            </h2>
+            <div className="flex items-center gap-2">
+              <img src="/memora-logo.png" alt="Memora" className="h-8 w-auto" />
+              <span className="text-lg font-bold font-display text-[var(--charcoal-900)]">Memora</span>
+            </div>
           )}
           <button
             onClick={() => {
@@ -714,14 +715,14 @@ export default function DashboardPage() {
                   transition-all duration-200 relative
                   ${
                     isActive
-                      ? "bg-gradient-to-r from-pink-50 to-purple-50 text-purple-700 font-semibold border-l-4 border-purple-500"
+                      ? "bg-gradient-to-r from-[var(--lavender-50)] to-[var(--peach-100)] text-[var(--lavender-700)] font-semibold border-l-4 border-[var(--lavender-500)]"
                       : item.highlight
-                      ? "text-purple-700 bg-purple-50 hover:bg-purple-100"
-                      : "text-gray-900 hover:bg-purple-50 hover:text-purple-700"
+                      ? "text-[var(--lavender-700)] bg-[var(--lavender-50)] hover:bg-[var(--lavender-100)]"
+                      : "text-[var(--charcoal-900)] hover:bg-[var(--lavender-50)] hover:text-[var(--lavender-700)]"
                   }
                 `}
               >
-                <span className={`flex-shrink-0 ${isActive ? "text-purple-600" : item.highlight ? "text-purple-600" : "text-gray-900"}`}>
+                <span className={`flex-shrink-0 ${isActive ? "text-[var(--lavender-600)]" : item.highlight ? "text-[var(--lavender-600)]" : "text-[var(--charcoal-800)]"}`}>
                   {item.icon}
                 </span>
                 {sidebarOpen && (
@@ -731,8 +732,8 @@ export default function DashboardPage() {
                       <span className={`
                         text-xs font-bold px-2 py-0.5 rounded-full
                         ${item.highlight
-                          ? "bg-pink-500 text-white animate-pulse"
-                          : "bg-gray-200 text-gray-900"}
+                          ? "bg-[var(--peach-400)] text-white animate-pulse"
+                          : "bg-[var(--cloud-100)] text-[var(--charcoal-900)]"}
                       `}>
                         {item.count}
                       </span>
@@ -740,7 +741,7 @@ export default function DashboardPage() {
                   </>
                 )}
                 {!sidebarOpen && item.count !== undefined && item.count > 0 && item.highlight && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-pink-500 rounded-full animate-pulse" />
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-[var(--peach-400)] rounded-full animate-pulse" />
                 )}
               </Link>
             );
@@ -756,24 +757,24 @@ export default function DashboardPage() {
         </div>
 
         {/* User Profile Section - Always visible at bottom */}
-        <div className="border-t border-purple-100 p-3 flex-shrink-0">
+        <div className="border-t border-[var(--lavender-200)] p-3 flex-shrink-0">
           {sidebarOpen ? (
             <div className="flex items-center gap-2.5 mb-2">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shadow-md">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--lavender-400)] to-[var(--peach-400)] flex items-center justify-center shadow-md">
                 <span className="text-white font-semibold text-sm">
                   {user?.email?.charAt(0).toUpperCase() || "U"}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-sm font-medium text-[var(--charcoal-900)] truncate">
                   {user?.email || "User"}
                 </p>
-                <p className="text-xs text-gray-600 truncate">Account</p>
+                <p className="text-xs text-[var(--charcoal-800)]/60 truncate">Account</p>
               </div>
             </div>
           ) : (
             <div className="flex justify-center mb-2">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shadow-md">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--lavender-400)] to-[var(--peach-400)] flex items-center justify-center shadow-md">
                 <span className="text-white font-semibold text-sm">
                   {user?.email?.charAt(0).toUpperCase() || "U"}
                 </span>
@@ -799,45 +800,45 @@ export default function DashboardPage() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         {/* Mobile Header */}
-        <header className="lg:hidden bg-white/90 backdrop-blur-sm border-b border-purple-100 px-4 py-3 flex items-center justify-between flex-shrink-0">
+        <header className="lg:hidden bg-white/90 backdrop-blur-sm border-b border-[var(--lavender-200)] px-4 py-3 flex items-center justify-between flex-shrink-0">
           <button
             onClick={() => setMobileMenuOpen(true)}
-            className="p-2 rounded-md hover:bg-purple-50 text-gray-900 transition"
+            className="p-2 rounded-md hover:bg-[var(--lavender-50)] text-[var(--charcoal-900)] transition"
             aria-label="Open menu"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <h1 className="text-lg font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
-            {user ? (getFirstName(user) ? `Welcome, ${getFirstName(user)}! 🎉` : 'Dashboard') : 'Dashboard'}
+          <h1 className="text-lg font-bold font-display bg-gradient-to-r from-[var(--lavender-500)] via-[var(--peach-400)] to-[var(--mint-400)] bg-clip-text text-transparent">
+            {user ? (getFirstName(user) ? `Welcome, ${getFirstName(user)}!` : 'Dashboard') : 'Dashboard'}
           </h1>
           <div className="w-10" /> {/* Spacer for centering */}
         </header>
 
         {/* Desktop Header - Fixed */}
-        <header className="hidden lg:flex bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 px-8 py-6 border-b border-purple-100/50 flex-shrink-0">
+        <header className="hidden lg:flex bg-gradient-to-br from-[var(--lavender-50)] via-[var(--peach-100)] to-[var(--mint-100)] px-8 py-6 border-b border-[var(--lavender-200)]/50 flex-shrink-0">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold font-display bg-gradient-to-r from-[var(--lavender-500)] via-[var(--peach-400)] to-[var(--mint-400)] bg-clip-text text-transparent">
                 {user ? (getFirstName(user) ? `Welcome, ${getFirstName(user)}!` : 'Dashboard') : 'Dashboard'}
               </h1>
               {user && (
-                <p className="text-gray-900 text-sm mt-2">{user.email}</p>
+                <p className="text-[var(--charcoal-800)] text-sm mt-2">{user.email}</p>
               )}
             </div>
           </div>
         </header>
 
         {/* Main Content - Scrollable */}
-        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-[var(--lavender-50)] via-[var(--peach-100)] to-[var(--mint-100)]">
           <div className="p-4 lg:p-8">
             {/* Loading state */}
             {loading ? (
               <div className="flex justify-center py-24">
                 <div className="flex flex-col items-center gap-4">
-                  <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-                  <p className="text-lg font-medium text-gray-900">Loading your events...</p>
+                  <div className="w-16 h-16 border-4 border-[var(--lavender-200)] border-t-[var(--lavender-500)] rounded-full animate-spin"></div>
+                  <p className="text-lg font-medium text-[var(--charcoal-900)]">Loading your events...</p>
                 </div>
               </div>
             ) : (
@@ -847,16 +848,16 @@ export default function DashboardPage() {
                   /* Home Tab Content - Two main action buttons */
                   <div className="flex items-center justify-center min-h-[60vh]">
                     <div className="text-center max-w-4xl w-full">
-                      <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
+                      <h2 className="text-3xl sm:text-4xl font-bold font-display text-[var(--charcoal-900)] mb-3">
                         What would you like to plan?
                       </h2>
-                      <p className="text-gray-600 mb-12 text-lg">Choose an option to get started</p>
+                      <p className="text-[var(--charcoal-800)] mb-12 text-lg">Choose an option to get started</p>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 lg:gap-16">
                         {/* Special Events Card */}
                         <button
                           onClick={() => setShowCreateEventModal(true)}
-                          className="group p-8 sm:p-10 rounded-3xl bg-purple-100/40 hover:bg-purple-100/70 hover:shadow-2xl transition-all transform hover:scale-105"
+                          className="group p-8 sm:p-10 rounded-3xl bg-[var(--lavender-100)]/40 hover:bg-[var(--lavender-100)]/70 hover:shadow-2xl transition-all transform hover:scale-105 border border-[var(--lavender-200)]/50"
                         >
                           <div className="mb-6 flex justify-center">
                             <img
@@ -865,10 +866,10 @@ export default function DashboardPage() {
                               className="w-40 h-40 sm:w-52 sm:h-52 object-contain"
                             />
                           </div>
-                          <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-purple-600 transition">
+                          <h3 className="text-2xl font-bold font-display text-[var(--charcoal-900)] mb-3 group-hover:text-[var(--lavender-600)] transition">
                             Special Events
                           </h3>
-                          <p className="text-gray-600">
+                          <p className="text-[var(--charcoal-800)]">
                             Birthdays, Weddings, Anniversaries with gift registry
                           </p>
                         </button>
@@ -876,7 +877,7 @@ export default function DashboardPage() {
                         {/* Casual Meet-up Card */}
                         <button
                           onClick={() => setShowCasualMeetupModal(true)}
-                          className="group p-8 sm:p-10 rounded-3xl bg-teal-100/40 hover:bg-teal-100/70 hover:shadow-2xl transition-all transform hover:scale-105"
+                          className="group p-8 sm:p-10 rounded-3xl bg-[var(--mint-100)]/40 hover:bg-[var(--mint-100)]/70 hover:shadow-2xl transition-all transform hover:scale-105 border border-[var(--mint-200)]/50"
                         >
                           <div className="mb-6 flex justify-center">
                             <img
@@ -885,10 +886,10 @@ export default function DashboardPage() {
                               className="w-40 h-40 sm:w-52 sm:h-52 object-contain"
                             />
                           </div>
-                          <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-teal-600 transition">
+                          <h3 className="text-2xl font-bold font-display text-[var(--charcoal-900)] mb-3 group-hover:text-[var(--mint-400)] transition">
                             Casual Meet-up
                           </h3>
-                          <p className="text-gray-600">
+                          <p className="text-[var(--charcoal-800)]">
                             Coffee, Dinner, Book Club - quick to set up
                           </p>
                         </button>
@@ -898,16 +899,16 @@ export default function DashboardPage() {
                 ) : activeTab === "invitations" ? (
                   /* Invitations Tab Content */
                   <div className="space-y-4">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4">Pending Invitations</h2>
+                    <h2 className="text-xl font-bold font-display text-[var(--charcoal-900)] mb-4">Pending Invitations</h2>
                     {pendingInvitations.length === 0 ? (
-                      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 text-center border border-purple-100">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-200 to-pink-200 flex items-center justify-center">
-                          <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 text-center border border-[var(--lavender-200)]">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[var(--lavender-200)] to-[var(--peach-200)] flex items-center justify-center">
+                          <svg className="w-8 h-8 text-[var(--lavender-600)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                           </svg>
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No pending invitations</h3>
-                        <p className="text-gray-900">When someone invites you to their event, it will appear here.</p>
+                        <h3 className="text-lg font-semibold text-[var(--charcoal-900)] mb-2">No pending invitations</h3>
+                        <p className="text-[var(--charcoal-800)]">When someone invites you to their event, it will appear here.</p>
                       </div>
                     ) : (
                       <div className="grid gap-4">
@@ -918,7 +919,7 @@ export default function DashboardPage() {
                           return (
                           <div
                             key={invitation.id}
-                            className="bg-white/90 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-purple-100 hover:shadow-xl transition-all"
+                            className="bg-white/90 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-[var(--lavender-200)] hover:shadow-xl transition-all"
                           >
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                               <div className="flex-1">
@@ -955,7 +956,7 @@ export default function DashboardPage() {
                                 <button
                                   onClick={() => handleInvitationResponse(invitation.id, 'accepted')}
                                   disabled={respondingToInvite === invitation.id}
-                                  className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg font-medium hover:from-pink-600 hover:to-purple-700 transition disabled:opacity-50"
+                                  className="px-4 py-2 bg-gradient-to-r from-[var(--lavender-400)] to-[var(--lavender-600)] text-white rounded-lg font-medium hover:from-[var(--lavender-500)] hover:to-[var(--lavender-700)] transition disabled:opacity-50"
                                 >
                                   {respondingToInvite === invitation.id ? 'Joining...' : 'Accept & Join'}
                                 </button>
@@ -970,7 +971,7 @@ export default function DashboardPage() {
                 ) : activeTab === "fulfillments" ? (
                   /* Fulfillments Tab Content */
                   <div className="space-y-4">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4">Redemption History</h2>
+                    <h2 className="text-xl font-bold font-display text-[var(--charcoal-900)] mb-4">Redemption History</h2>
                     {loadingFulfillments ? (
                       <div className="flex justify-center py-12">
                         <div className="flex flex-col items-center gap-4">
@@ -1056,9 +1057,9 @@ export default function DashboardPage() {
                     )}
                   </div>
                 ) : displayEvents.length === 0 ? (
-                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-12 text-center border border-purple-100">
-                    <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
-                      <svg className="w-10 h-10 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-12 text-center border border-[var(--lavender-200)]">
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-[var(--lavender-200)] to-[var(--peach-200)] flex items-center justify-center">
+                      <svg className="w-10 h-10 text-[var(--lavender-600)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         {activeTab === "joined" ? (
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                         ) : activeTab === "upcoming" ? (
@@ -1068,14 +1069,14 @@ export default function DashboardPage() {
                         )}
                       </svg>
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                    <h2 className="text-2xl font-bold font-display text-[var(--charcoal-900)] mb-3">
                       {activeTab === "joined"
                         ? "No joined events yet"
                         : activeTab === "upcoming"
                         ? "No events in the next 7 days"
                         : "Start your first celebration!"}
                     </h2>
-                    <p className="text-gray-900 mb-6 max-w-md mx-auto">
+                    <p className="text-[var(--charcoal-800)] mb-6 max-w-md mx-auto">
                       {activeTab === "joined"
                         ? "When you accept an invitation or join an event, it will appear here."
                         : activeTab === "upcoming"
@@ -1085,7 +1086,7 @@ export default function DashboardPage() {
                     {activeTab !== "joined" && activeTab !== "upcoming" && (
                       <Link
                         href="/create-event"
-                        className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 inline-flex items-center gap-2"
+                        className="bg-gradient-to-r from-[var(--lavender-400)] to-[var(--lavender-600)] text-white px-8 py-3 rounded-xl font-semibold hover:from-[var(--lavender-500)] hover:to-[var(--lavender-700)] transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 inline-flex items-center gap-2"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -1098,11 +1099,11 @@ export default function DashboardPage() {
                   <>
                     {/* Section Header for Joined Events */}
                     {activeTab === "joined" && (
-                      <h2 className="text-xl font-bold text-gray-900 mb-4">Events You've Joined</h2>
+                      <h2 className="text-xl font-bold font-display text-[var(--charcoal-900)] mb-4">Events You've Joined</h2>
                     )}
                     {/* Section Header for Upcoming Events */}
                     {activeTab === "upcoming" && (
-                      <h2 className="text-xl font-bold text-gray-900 mb-4">Upcoming Events (Next 7 Days)</h2>
+                      <h2 className="text-xl font-bold font-display text-[var(--charcoal-900)] mb-4">Upcoming Events (Next 7 Days)</h2>
                     )}
                     <div className="grid gap-6 md:grid-cols-2">
                       {displayEvents.map((event, index) => {
@@ -1140,7 +1141,7 @@ export default function DashboardPage() {
                                         setEditingEvent(event);
                                         setShowCreateEventModal(true);
                                       }}
-                                      className="w-full text-left px-4 py-2 text-sm text-gray-900 hover:bg-purple-50 flex items-center gap-2"
+                                      className="w-full text-left px-4 py-2 text-sm text-[var(--charcoal-900)] hover:bg-[var(--lavender-50)] flex items-center gap-2"
                                     >
                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -1153,8 +1154,8 @@ export default function DashboardPage() {
                                         setOpenMenuId(null);
                                         togglePin(event.id);
                                       }}
-                                      className={`w-full text-left px-4 py-2 text-sm hover:bg-purple-50 flex items-center gap-2 ${
-                                        pinnedEvents.has(event.id) ? 'text-red-600' : 'text-gray-900'
+                                      className={`w-full text-left px-4 py-2 text-sm hover:bg-[var(--lavender-50)] flex items-center gap-2 ${
+                                        pinnedEvents.has(event.id) ? 'text-[var(--peach-500)]' : 'text-[var(--charcoal-900)]'
                                       }`}
                                     >
                                       <svg className="w-4 h-4" fill={pinnedEvents.has(event.id) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
@@ -1183,7 +1184,7 @@ export default function DashboardPage() {
                             {/* Pinned badge */}
                             {pinnedEvents.has(event.id) && activeTab !== "joined" && (
                               <div className="absolute top-3 left-3 z-10">
-                                <svg className="w-6 h-6 text-red-600 drop-shadow-md" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-6 h-6 text-[var(--peach-500)] drop-shadow-md" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                                 </svg>
                               </div>
@@ -1191,7 +1192,7 @@ export default function DashboardPage() {
 
                             {/* Joined badge for joined events */}
                             {activeTab === "joined" && (
-                              <div className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
+                              <div className="absolute top-3 right-3 bg-[var(--mint-400)] text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
                                 Joined
                               </div>
                             )}
@@ -1207,13 +1208,13 @@ export default function DashboardPage() {
                               {/* Date Badge */}
                               {dateInfo && (
                                 <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium mb-3 ${
-                                  dateInfo.status === 'today' 
-                                    ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-white animate-pulse' 
+                                  dateInfo.status === 'today'
+                                    ? 'bg-gradient-to-r from-[var(--buttercream-100)] to-[var(--peach-300)] text-[var(--charcoal-900)] animate-pulse'
                                     : dateInfo.status === 'upcoming'
-                                    ? 'bg-blue-100 text-blue-700'
+                                    ? 'bg-[var(--mint-100)] text-[var(--charcoal-900)]'
                                     : dateInfo.status === 'past'
-                                    ? 'bg-gray-200 text-gray-900'
-                                    : 'bg-purple-100 text-purple-700'
+                                    ? 'bg-[var(--cloud-100)] text-[var(--charcoal-800)]'
+                                    : 'bg-[var(--lavender-100)] text-[var(--lavender-700)]'
                                 }`}>
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -1233,21 +1234,21 @@ export default function DashboardPage() {
                               <div className="flex items-center justify-between">
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-1">
-                                    <span className="text-lg font-bold text-gray-900">${(event.totalRaised / 100).toFixed(2)}</span>
+                                    <span className="text-lg font-bold text-[var(--charcoal-900)]">${(event.totalRaised / 100).toFixed(2)}</span>
                                     {event.totalRaised > 0 && (
-                                      <span className="text-xs text-green-600 font-semibold">✓</span>
+                                      <span className="text-xs text-[var(--mint-400)] font-semibold">✓</span>
                                     )}
                                   </div>
-                                  <span className="text-xs text-gray-900">Total Raised</span>
+                                  <span className="text-xs text-[var(--charcoal-800)]">Total Raised</span>
                                 </div>
                                 <div className="flex flex-col items-end">
                                   <div className="flex items-center gap-1">
-                                    <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-4 h-4 text-[var(--charcoal-800)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                     </svg>
-                                    <span className="text-lg font-bold text-gray-900">{event.itemCount}</span>
+                                    <span className="text-lg font-bold text-[var(--charcoal-900)]">{event.itemCount}</span>
                                   </div>
-                                  <span className="text-xs text-gray-900">
+                                  <span className="text-xs text-[var(--charcoal-800)]">
                                     Item{event.itemCount === 1 ? "" : "s"}
                                   </span>
                                 </div>

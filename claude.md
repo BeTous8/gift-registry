@@ -6,6 +6,44 @@
 
 > **IMPORTANT FOR CLAUDE:** Always check this section first when starting a new session. These are the active tasks that need continuation.
 
+### ✅ COMPLETED - Frontend Redesign "Soft Celebration" (December 16, 2025)
+
+**Status:** ALL TASKS COMPLETE
+**Branch:** `feature/landing-page-redesign`
+
+**New Color Palette (inspired by new Memora logo):**
+- Lavender: `#B8A9E8` (primary)
+- Peach: `#FFCDB2` (accent)
+- Buttercream: `#FFF3CD` (highlight)
+- Mint: `#B5EAD7` (secondary)
+- Cloud: `#F8F7FF` (background)
+- Charcoal: `#2D2A3E` (text)
+
+**Completed Updates:**
+- ✅ **Landing Page** - Complete redesign with animated blobs, staggered reveals, 3D card effects
+- ✅ **Dashboard Page** - New color palette, updated sidebar with logo, Home tab action cards
+- ✅ **Login Page** - Redesigned with email/password form directly visible, new styling
+- ✅ **Event Slug Page** - Added two-tab system for special events:
+  - Gift Registry tab (items + Amazon Quick Add)
+  - Location tab (view/add venue with Google Maps integration)
+- ✅ **CreateEventModal** - Updated with new color palette
+- ✅ **CasualMeetupModal** - Updated with new color palette
+- ✅ **globals.css** - Added CSS variables for entire color palette
+- ✅ **layout.js** - Added Inter + Outfit fonts via Next.js font system
+
+**Key Files Modified:**
+- `app/page.jsx` - Landing page
+- `app/dashboard/page.jsx` - Dashboard
+- `app/login/page.jsx` - Login page
+- `app/event/[slug]/page.jsx` - Event page with tabs
+- `app/components/CreateEventModal.jsx`
+- `app/components/CasualMeetupModal.jsx`
+- `app/globals.css` - Color palette variables
+- `app/layout.js` - Font configuration
+- `public/memora-logo.png` - New logo
+
+---
+
 ### ✅ COMPLETED - UX Improvements (December 4, 2025)
 
 **Status:** ALL TASKS COMPLETE
@@ -54,39 +92,61 @@
 
 ### 🚨 CURRENT PRIORITY - Calendar & Registry Unification
 
-**Status:** ✅ Phase 6 COMPLETE (Security audit done) → Ready for Phase 0 (Database backup)
+**Status:** ✅ Phases 1-3 COMPLETE (Database + API + Frontend) → Phases 4-6 TODO
+**Branch:** `feature/calendar-unification`
 **Implementation Plan:** See `C:\Users\bntou\.claude\plans\zany-beaming-scott.md`
-**Estimated Time:** 20-30 hours total (7 phases)
+**Last Commit:** `2dcd845` - Merge calendar and registry systems (Phases 1-3)
 
-**What Changed:**
-- ✅ Phases 1-5: Calendar feature fully implemented (`user_events` table, API routes, UI components)
-- ✅ Phase 6: Security audit completed - all critical vulnerabilities fixed
-- **Decision:** Merge calendar and registry systems into unified `events` table (Option 3: Tight Integration)
+**What Works Now:**
+- ✅ Unified `events` table (calendar + registry in one table)
+- ✅ Calendar events created via `/api/calendar/events` (`registry_enabled=false`)
+- ✅ Dashboard shows only registries (filters `registry_enabled=true`)
+- ✅ MiniCalendar shows all events with colored dots (🟣 Registry, 🌸 Important, 🟢 Casual)
+- ✅ Full Calendar page displays all events correctly
 
-**Key Design Decisions:**
-1. **Single `events` table** with `registry_enabled` flag (replaces separate `user_events` table)
-2. **Recurring events CAN have registries** - but registry is one-time, creates NEW registry each year
-3. **Unified creation modal** - same modal for both Dashboard and Calendar
-4. **Calendar invitations** - reuse existing `invitations` table for calendar-only events
-5. **Annual renewal** - invitations must be renewed yearly (not perpetual)
+**Completed Phases (Dec 12, 2025):**
+- ✅ **Phase 0**: Database backup/rollback scripts created
+- ✅ **Phase 1**: Database migration (merged `user_events` → `events`)
+  - Added `registry_enabled`, `is_recurring`, `event_category` columns
+  - Made `slug`/`invite_code` nullable (NULL for calendar-only)
+  - Fixed timestamp type mismatches in `get_user_events_in_range` function
+  - Dropped old `user_events` table
+- ✅ **Phase 2**: Calendar API routes updated
+  - POST creates calendar-only events
+  - PUT/DELETE only operate on calendar events
+  - Maps old `event_type` → new `event_category`
+- ✅ **Phase 3**: Frontend components updated
+  - Dashboard filters for registries only
+  - MiniCalendar shows 3-color dot system
+  - Calendar page uses unified API
 
-**Implementation Phases:**
-- [ ] Phase 0: Database backup and rollback script (NEXT)
-- [ ] Phase 1: Database schema migration (merge user_events → events)
-- [ ] Phase 2: API consolidation (unified endpoints with `?type=` parameter)
-- [ ] Phase 3: Frontend updates (unified CreateEventModal component)
-- [ ] Phase 4: Invitation system extension
-- [ ] Phase 5: "Spawn Registry from Recurring" feature
-- [ ] Phase 6: Testing (6 manual test cases)
-- [ ] Phase 7: Production deployment
+**TODO Phases (Resume Tomorrow):**
+- [ ] **Phase 4**: Unified Event Creation Modal
+  - Build single modal used by both Dashboard and Calendar
+  - Let users choose: Calendar-only, Registry-only, or Both
+  - Replace separate creation flows
+- [ ] **Phase 5**: "Spawn Registry from Recurring Event" Feature
+  - Add button on recurring events: "Create Gift Registry for [Year]"
+  - Pre-fills creation modal with recurring event details
+  - Creates new one-time registry linked to recurring reminder
+- [ ] **Phase 6**: Manual Testing (6 comprehensive test cases)
+  - Test all event type combinations
+  - Test recurring + registry behavior
+  - Test calendar invitations (when invitations table exists)
+  - Verify dashboard/calendar display logic
+  - Test edge cases (leap year, date boundaries, etc.)
 
 **Critical Files:**
 - Plan: `C:\Users\bntou\.claude\plans\zany-beaming-scott.md`
-- Migration: `supabase_unified_events_migration.sql` (to be created)
-- Backup: `supabase_unified_migration_backup.sql` (to be created)
-- Security fixes: `supabase_calendar_security_fix.sql` (already applied)
+- Migration: `supabase_unified_events_migration.sql` ✅
+- Timestamp Fix: `supabase_fix_timestamp_mismatch.sql` ✅
+- Backup: `supabase_unified_migration_backup.sql` ✅
+- Rollback: `supabase_unified_migration_rollback.sql` ✅
 
-**Next Action:** Create database backup script for Phase 0
+**Next Action (Tomorrow):**
+1. Start Phase 4: Build unified CreateEventModal component
+2. Add modal to both Dashboard and Calendar pages
+3. Implement registry spawning from recurring events (Phase 5)
 
 ---
 
@@ -188,7 +248,7 @@ For detailed historical information, see:
 ---
 
 ## 🔄 Last Updated
-**Date:** 2025-12-11
+**Date:** 2025-12-12
 **Status:**
 - ✅ Google Places & Event Types COMPLETE
 - ✅ Edit Location feature COMPLETE
@@ -198,17 +258,17 @@ For detailed historical information, see:
 - ✅ Fulfillment System COMPLETE (Implementation done - E2E testing deferred)
   - ✅ Day 0-4: All implementation phases complete
   - ⏸️ Day 5: E2E testing deferred (will test with calendar unification)
-- ✅ Calendar Feature COMPLETE (Phases 1-6 done)
-  - ✅ Database schema, API routes, UI components, security audit
-- 🎯 Calendar & Registry Unification IN PROGRESS (Current priority - 20-30 hours)
-  - Detailed plan: `C:\Users\bntou\.claude\plans\zany-beaming-scott.md`
-  - Next: Phase 0 (Database backup script)
+- 🎯 **Calendar & Registry Unification IN PROGRESS** (Phases 1-3 done, 4-6 TODO)
+  - ✅ Phases 1-3: Database migration, API routes, frontend components
+  - 📋 Phases 4-6: Unified modal, recurring spawn, testing
+  - Branch: `feature/calendar-unification`
+  - Commit: `2dcd845`
 
-**Next Action:**
-1. Phase 0: Create database backup and rollback script
-2. Phase 1-7: Execute unified migration per implementation plan
-3. Combined E2E testing for fulfillment + unified events system
-4. Production launch prep
+**Next Session (Tomorrow):**
+1. Phase 4: Build unified CreateEventModal component
+2. Phase 5: Implement "Spawn Registry from Recurring" feature
+3. Phase 6: Manual testing (6 test cases)
+4. Merge to main after all tests pass
 
 ---
 

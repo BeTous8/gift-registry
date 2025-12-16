@@ -62,6 +62,9 @@ export default function ViewEventPage() {
   const [showRedemptionModal, setShowRedemptionModal] = useState(false);
   const [itemToRedeem, setItemToRedeem] = useState(null);
 
+  // Page tab for special events (Registry vs Location)
+  const [pageTab, setPageTab] = useState("registry");
+
   // Members and invitations states
   const [members, setMembers] = useState([]);
   const [invitations, setInvitations] = useState([]);
@@ -656,10 +659,10 @@ export default function ViewEventPage() {
   const isCasualMeetup = event?.event_category === 'casual' || event?.registry_enabled === false;
 
   return (
-    <div className={`min-h-screen py-10 ${
+    <div className={`min-h-screen py-10 font-body ${
       isCasualMeetup
-        ? 'bg-gradient-to-br from-teal-100 via-cyan-100 to-teal-50'
-        : 'bg-gradient-to-br from-blue-100 via-blue-200 to-blue-50'
+        ? 'bg-gradient-to-br from-[var(--mint-100)] via-[var(--mint-200)] to-[var(--cloud-50)]'
+        : 'bg-gradient-to-br from-[var(--lavender-50)] via-[var(--peach-100)] to-[var(--mint-100)]'
     }`}>
       <div className="max-w-6xl mx-auto px-4">
         {/* Success Banner */}
@@ -753,8 +756,8 @@ export default function ViewEventPage() {
                     href={`/dashboard?tab=${fromTab}`}
                     className={`inline-flex items-center gap-2 bg-white px-4 py-2 rounded-lg font-semibold shadow-md transition self-start ${
                       isCasualMeetup
-                        ? 'text-teal-700 hover:bg-teal-50 border border-teal-200'
-                        : 'text-blue-700 hover:bg-blue-50 border border-blue-200'
+                        ? 'text-[var(--mint-400)] hover:bg-[var(--mint-100)] border border-[var(--mint-200)]'
+                        : 'text-[var(--lavender-600)] hover:bg-[var(--lavender-50)] border border-[var(--lavender-200)]'
                     }`}
                   >
                     ← {fromTab === 'joined' ? 'Joined Events' :
@@ -766,12 +769,12 @@ export default function ViewEventPage() {
 
                 {/* Center: Title, Date, Event Type */}
                 <div className="flex-1 text-center">
-                  <h1 className={`text-3xl lg:text-4xl font-bold mb-2 ${
-                    isCasualMeetup ? 'text-teal-900' : 'text-blue-900'
+                  <h1 className={`text-3xl lg:text-4xl font-bold font-display mb-2 ${
+                    isCasualMeetup ? 'text-[var(--charcoal-900)]' : 'text-[var(--charcoal-900)]'
                   }`}>{event.title}</h1>
                   {event.event_date && (
                     <div className={`text-md font-medium mb-2 ${
-                      isCasualMeetup ? 'text-teal-600' : 'text-blue-600'
+                      isCasualMeetup ? 'text-[var(--mint-400)]' : 'text-[var(--lavender-600)]'
                     }`}>
                       {formatDate(event.event_date)}
                     </div>
@@ -779,8 +782,8 @@ export default function ViewEventPage() {
                   <div>
                     <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
                       isCasualMeetup
-                        ? 'bg-teal-100 text-teal-700'
-                        : 'bg-purple-100 text-purple-700'
+                        ? 'bg-[var(--mint-100)] text-[var(--charcoal-900)]'
+                        : 'bg-[var(--lavender-100)] text-[var(--lavender-700)]'
                     }`}>
                       {isCasualMeetup ? '☕ Casual Meetup' : '🎁 Gift Registry'}
                     </span>
@@ -788,14 +791,14 @@ export default function ViewEventPage() {
 
                   {/* Location - prominent for casual meetups */}
                   {isCasualMeetup && event.location && (
-                    <div className="mt-4 inline-flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-md border border-teal-200">
-                      <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="mt-4 inline-flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-md border border-[var(--mint-200)]">
+                      <svg className="w-5 h-5 text-[var(--mint-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                       <div className="text-left">
-                        <p className="font-medium text-gray-900">{event.location.name}</p>
-                        <p className="text-sm text-gray-600">{event.location.formatted_address}</p>
+                        <p className="font-medium text-[var(--charcoal-900)]">{event.location.name}</p>
+                        <p className="text-sm text-[var(--charcoal-800)]">{event.location.formatted_address}</p>
                       </div>
                     </div>
                   )}
@@ -807,8 +810,8 @@ export default function ViewEventPage() {
                     onClick={handleShare}
                     className={`inline-flex items-center gap-2 bg-white px-4 py-2 rounded-lg font-semibold shadow-md transition self-start ${
                       isCasualMeetup
-                        ? 'text-teal-700 hover:bg-teal-50 border border-teal-200'
-                        : 'text-blue-700 hover:bg-blue-50 border border-blue-200'
+                        ? 'text-[var(--mint-400)] hover:bg-[var(--mint-100)] border border-[var(--mint-200)]'
+                        : 'text-[var(--lavender-600)] hover:bg-[var(--lavender-50)] border border-[var(--lavender-200)]'
                     }`}
                     title="Copy link to share"
                   >
@@ -829,8 +832,47 @@ export default function ViewEventPage() {
 
               {/* Description below the header */}
               {event.description && (
-                <div className="mx-auto max-w-3xl text-center text-gray-800 text-lg mt-4">
+                <div className="mx-auto max-w-3xl text-center text-[var(--charcoal-800)] text-lg mt-4">
                   {event.description}
+                </div>
+              )}
+
+              {/* Tab Navigation for Special Events */}
+              {!isCasualMeetup && (
+                <div className="mt-6 flex justify-center">
+                  <div className="inline-flex bg-white rounded-xl p-1 shadow-md border border-[var(--lavender-100)]">
+                    <button
+                      onClick={() => setPageTab("registry")}
+                      className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
+                        pageTab === "registry"
+                          ? "bg-gradient-to-r from-[var(--lavender-400)] to-[var(--lavender-500)] text-white shadow-md"
+                          : "text-[var(--charcoal-800)] hover:bg-[var(--lavender-50)]"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                        </svg>
+                        Gift Registry
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setPageTab("location")}
+                      className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
+                        pageTab === "location"
+                          ? "bg-gradient-to-r from-[var(--mint-300)] to-[var(--mint-400)] text-white shadow-md"
+                          : "text-[var(--charcoal-800)] hover:bg-[var(--mint-100)]"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Location
+                      </span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -839,9 +881,9 @@ export default function ViewEventPage() {
             <div className="flex flex-col lg:flex-row gap-6">
               {/* Left Sidebar - Members & Invitees */}
               <div className="w-full lg:w-72 flex-shrink-0">
-                <div className="bg-white rounded-lg shadow-md p-4 sticky top-4">
-                  <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-white rounded-xl shadow-md p-4 sticky top-4 border border-[var(--lavender-100)]">
+                  <h3 className="font-bold text-[var(--charcoal-900)] mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-[var(--lavender-500)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                     Members
@@ -850,13 +892,13 @@ export default function ViewEventPage() {
                   {/* Owner */}
                   {eventOwner && (
                     <div className="mb-3">
-                      <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
-                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                      <div className="flex items-center gap-2 p-2 bg-[var(--lavender-50)] rounded-lg">
+                        <div className="w-8 h-8 bg-gradient-to-br from-[var(--lavender-400)] to-[var(--lavender-500)] rounded-full flex items-center justify-center text-white font-semibold text-sm">
                           {eventOwner.name?.charAt(0)?.toUpperCase() || '?'}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-800 text-sm truncate">{eventOwner.name}</p>
-                          <p className="text-xs text-blue-600">Owner</p>
+                          <p className="font-medium text-[var(--charcoal-900)] text-sm truncate">{eventOwner.name}</p>
+                          <p className="text-xs text-[var(--lavender-600)]">Owner</p>
                         </div>
                       </div>
                     </div>
@@ -866,13 +908,13 @@ export default function ViewEventPage() {
                   {members.length > 0 && (
                     <div className="space-y-2 mb-4">
                       {members.map((member) => (
-                        <div key={member.id} className="group flex items-center gap-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                          <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                        <div key={member.id} className="group flex items-center gap-2 p-2 bg-[var(--cloud-50)] rounded-lg hover:bg-[var(--mint-100)] transition">
+                          <div className="w-8 h-8 bg-gradient-to-br from-[var(--mint-300)] to-[var(--mint-400)] rounded-full flex items-center justify-center text-white font-semibold text-sm">
                             {member.name?.charAt(0)?.toUpperCase() || '?'}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-800 text-sm truncate">{member.name}</p>
-                            <p className="text-xs text-gray-900">Member</p>
+                            <p className="font-medium text-[var(--charcoal-900)] text-sm truncate">{member.name}</p>
+                            <p className="text-xs text-[var(--charcoal-800)]">Member</p>
                           </div>
                           {isOwner && (
                             <button
@@ -895,22 +937,22 @@ export default function ViewEventPage() {
                   )}
 
                   {members.length === 0 && !eventOwner && (
-                    <p className="text-gray-900 text-sm mb-4">No members yet</p>
+                    <p className="text-[var(--charcoal-800)] text-sm mb-4">No members yet</p>
                   )}
 
                   {/* Pending Invitations (Owner only) */}
                   {isOwner && invitations.length > 0 && (
-                    <div className="border-t border-gray-200 pt-3 mt-3">
-                      <h4 className="font-semibold text-gray-900 text-sm mb-2">Pending Invites</h4>
+                    <div className="border-t border-[var(--lavender-100)] pt-3 mt-3">
+                      <h4 className="font-semibold text-[var(--charcoal-900)] text-sm mb-2">Pending Invites</h4>
                       <div className="space-y-2">
                         {invitations.filter(inv => inv.status === 'pending').map((invite) => (
-                          <div key={invite.id} className="flex items-center gap-2 p-2 bg-yellow-50 rounded-lg">
-                            <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                          <div key={invite.id} className="flex items-center gap-2 p-2 bg-[var(--buttercream-50)] rounded-lg">
+                            <div className="w-8 h-8 bg-[var(--peach-300)] rounded-full flex items-center justify-center text-white font-semibold text-sm">
                               ✉
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-gray-900 text-sm truncate">{invite.email}</p>
-                              <p className="text-xs text-yellow-600">Pending</p>
+                              <p className="font-medium text-[var(--charcoal-900)] text-sm truncate">{invite.email}</p>
+                              <p className="text-xs text-[var(--peach-400)]">Pending</p>
                             </div>
                             <button
                               onClick={async (e) => {
@@ -973,10 +1015,10 @@ export default function ViewEventPage() {
 
                   {/* Invite Actions (Owner only) */}
                   {isOwner && (
-                    <div className="border-t border-gray-200 pt-3 mt-3 space-y-2">
+                    <div className="border-t border-[var(--lavender-100)] pt-3 mt-3 space-y-2">
                       <button
                         onClick={() => setShowInviteModal(true)}
-                        className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:bg-blue-700 transition"
+                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[var(--lavender-400)] to-[var(--lavender-500)] text-white px-3 py-2 rounded-lg font-semibold text-sm hover:from-[var(--lavender-500)] hover:to-[var(--lavender-600)] transition"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -986,7 +1028,7 @@ export default function ViewEventPage() {
 
                       <button
                         onClick={() => setShowInviteFromContactsModal(true)}
-                        className="w-full flex items-center justify-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:bg-purple-700 transition"
+                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[var(--peach-300)] to-[var(--peach-400)] text-white px-3 py-2 rounded-lg font-semibold text-sm hover:from-[var(--peach-400)] hover:to-[var(--peach-500)] transition"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -997,7 +1039,7 @@ export default function ViewEventPage() {
                       {event?.invite_code && (
                         <button
                           onClick={handleCopyInviteLink}
-                          className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-900 px-3 py-2 rounded-lg font-semibold text-sm hover:bg-gray-200 transition"
+                          className="w-full flex items-center justify-center gap-2 bg-[var(--cloud-100)] text-[var(--charcoal-800)] px-3 py-2 rounded-lg font-semibold text-sm hover:bg-[var(--lavender-100)] transition"
                         >
                           {copiedInviteLink ? (
                             <>
@@ -1123,13 +1165,13 @@ export default function ViewEventPage() {
                 )}
 
                 {/* Items Grid - only for gift registries (not casual meetups) */}
-                {!isCasualMeetup && (
+                {!isCasualMeetup && pageTab === "registry" && (
                   <>
                     {/* Add Item Button - shown for owners */}
                     {isOwner && !editingItemId && (
-                  <div className="mb-6 bg-white rounded-lg shadow-md p-6 border-2 border-blue-200">
+                  <div className="mb-6 bg-white rounded-lg shadow-md p-6 border-2 border-[var(--lavender-200)]">
                       <button
-                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-lg hover:from-blue-700 hover:to-purple-700 transition shadow-lg"
+                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[var(--lavender-400)] to-[var(--lavender-600)] text-white font-bold rounded-lg hover:from-[var(--lavender-500)] hover:to-[var(--lavender-700)] transition shadow-lg"
                         onClick={() => setShowAddItemModal(true)}
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1142,7 +1184,7 @@ export default function ViewEventPage() {
 
                     {/* Edit Item Form - shown when editing */}
                     {isOwner && editingItemId && (
-                      <div className="mb-6 bg-white rounded-lg shadow-md p-6 border-2 border-blue-200">
+                      <div className="mb-6 bg-white rounded-lg shadow-md p-6 border-2 border-[var(--lavender-200)]">
                         <div className="bg-gray-50 rounded-md p-4 border border-gray-200">
                           <h4 className="font-semibold mb-3 text-gray-800">
                             Edit Item
@@ -1394,6 +1436,133 @@ export default function ViewEventPage() {
                   )}
                 </div>
                   </>
+                )}
+
+                {/* Location Tab Content - for special events */}
+                {!isCasualMeetup && pageTab === "location" && (
+                  <div className="bg-white rounded-2xl shadow-lg p-6 border border-[var(--lavender-100)]">
+                    <h3 className="text-2xl font-bold font-display text-[var(--charcoal-900)] mb-6 flex items-center gap-3">
+                      <svg className="w-7 h-7 text-[var(--mint-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Event Location
+                    </h3>
+
+                    {event.location ? (
+                      <>
+                        {/* Photos */}
+                        {event.location.photos && event.location.photos.length > 0 && (
+                          <div className="grid grid-cols-3 gap-3 mb-6">
+                            {event.location.photos.slice(0, 3).map((photo, index) => (
+                              <img
+                                key={index}
+                                src={`/api/places/photo?photo_reference=${encodeURIComponent(photo.photo_reference)}&maxwidth=400`}
+                                alt={`${event.location.name} photo ${index + 1}`}
+                                className="w-full h-32 object-cover rounded-xl"
+                              />
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Place Info */}
+                        <div className="bg-gradient-to-br from-[var(--mint-100)] to-[var(--lavender-50)] rounded-xl p-6">
+                          <h4 className="text-2xl font-bold text-[var(--charcoal-900)] mb-3">{event.location.name}</h4>
+
+                          {/* Rating */}
+                          {event.location.rating && (
+                            <div className="flex items-center gap-2 mb-4">
+                              <div className="flex">
+                                {[...Array(5)].map((_, i) => (
+                                  <svg
+                                    key={i}
+                                    className={`w-5 h-5 ${i < Math.floor(event.location.rating) ? 'text-[var(--buttercream-200)]' : 'text-[var(--cloud-100)]'}`}
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                  </svg>
+                                ))}
+                              </div>
+                              <span className="text-sm font-medium text-[var(--charcoal-800)]">{event.location.rating.toFixed(1)}</span>
+                            </div>
+                          )}
+
+                          {/* Address */}
+                          <div className="flex items-start gap-3 mb-6">
+                            <svg className="w-5 h-5 text-[var(--charcoal-800)] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <p className="text-[var(--charcoal-800)]">{event.location.formatted_address}</p>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className={`${isOwner ? 'flex flex-col sm:flex-row gap-4' : ''}`}>
+                            {/* Google Maps Link */}
+                            {event.location.geometry && (
+                              <a
+                                href={`https://www.google.com/maps/search/?api=1&query=${event.location.geometry.lat},${event.location.geometry.lng}&query_place_id=${event.location.place_id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`inline-block ${isOwner ? 'flex-1' : 'w-full'} px-4 py-3 bg-gradient-to-r from-[var(--mint-300)] to-[var(--mint-400)] text-white rounded-lg font-medium hover:from-[var(--mint-400)] hover:to-[var(--lavender-400)] transition text-center`}
+                              >
+                                <div className="flex items-center justify-center gap-2">
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  </svg>
+                                  Open in Google Maps
+                                </div>
+                              </a>
+                            )}
+
+                            {/* Edit Location Button - Owner only */}
+                            {isOwner && (
+                              <button
+                                onClick={handleEditLocation}
+                                className={`inline-block ${!event.location.geometry ? 'w-full' : 'flex-1'} px-4 py-3 border-2 border-[var(--lavender-200)] text-[var(--charcoal-800)] rounded-lg font-medium hover:bg-[var(--lavender-50)] transition text-center`}
+                              >
+                                <div className="flex items-center justify-center gap-2">
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.232 5.232z" />
+                                  </svg>
+                                  Edit Location
+                                </div>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      /* No location set - show empty state */
+                      <div className="text-center py-12">
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-[var(--mint-100)] to-[var(--lavender-100)] flex items-center justify-center">
+                          <svg className="w-10 h-10 text-[var(--mint-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </div>
+                        <h4 className="text-xl font-semibold text-[var(--charcoal-900)] mb-2">No location set</h4>
+                        <p className="text-[var(--charcoal-800)] mb-6 max-w-md mx-auto">
+                          {isOwner
+                            ? "Add a venue or meeting place to help guests know where to go."
+                            : "The event host hasn't added a location yet."}
+                        </p>
+                        {isOwner && (
+                          <button
+                            onClick={handleEditLocation}
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[var(--mint-300)] to-[var(--mint-400)] text-white rounded-xl font-semibold hover:from-[var(--mint-400)] hover:to-[var(--lavender-400)] transition shadow-lg"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Location
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

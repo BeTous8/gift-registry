@@ -173,17 +173,17 @@ export default function CreateEventModal({
         onClick={onClose}
       >
         <div
-          className="bg-white shadow-2xl rounded-2xl px-6 sm:px-8 py-6 max-w-4xl w-full max-h-[95vh] overflow-y-auto"
+          className="bg-white shadow-2xl rounded-2xl px-6 sm:px-8 py-6 max-w-4xl w-full max-h-[95vh] overflow-y-auto border border-[var(--lavender-100)]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
+            <h2 className="text-2xl sm:text-3xl font-bold font-display bg-gradient-to-r from-[var(--lavender-500)] via-[var(--peach-400)] to-[var(--mint-400)] bg-clip-text text-transparent">
               {isEditing ? "Edit Event" : "Create New Event"}
             </h2>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition"
+              className="p-2 rounded-lg hover:bg-[var(--lavender-50)] text-[var(--charcoal-800)] transition"
               aria-label="Close modal"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,20 +195,20 @@ export default function CreateEventModal({
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Error Message */}
             {error && (
-              <div className="text-red-600 text-sm text-center bg-red-50 border-2 border-red-200 p-4 rounded-lg">
+              <div className="text-[var(--charcoal-900)] text-sm text-center bg-[var(--peach-100)] border-2 border-[var(--peach-300)] p-4 rounded-lg">
                 {error}
               </div>
             )}
 
             {/* Event Title */}
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="title">
-                Event Title <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium mb-1 text-[var(--charcoal-900)]" htmlFor="title">
+                Event Title <span className="text-[var(--peach-500)]">*</span>
               </label>
               <input
                 id="title"
                 type="text"
-                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
+                className="w-full px-4 py-2 border-2 border-[var(--lavender-200)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--lavender-400)] focus:border-transparent text-[var(--charcoal-900)]"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
@@ -218,13 +218,13 @@ export default function CreateEventModal({
 
             {/* Event Date */}
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="date">
+              <label className="block text-sm font-medium mb-1 text-[var(--charcoal-900)]" htmlFor="date">
                 Event Date
               </label>
               <input
                 id="date"
                 type="date"
-                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
+                className="w-full px-4 py-2 border-2 border-[var(--lavender-200)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--lavender-400)] focus:border-transparent text-[var(--charcoal-900)]"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
               />
@@ -232,13 +232,13 @@ export default function CreateEventModal({
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-900" htmlFor="description">
+              <label className="block text-sm font-medium mb-1 text-[var(--charcoal-900)]" htmlFor="description">
                 Description
               </label>
               <textarea
                 id="description"
                 rows={2}
-                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-gray-900"
+                className="w-full px-4 py-2 border-2 border-[var(--lavender-200)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--lavender-400)] focus:border-transparent resize-none text-[var(--charcoal-900)]"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter event description (optional)"
@@ -247,28 +247,28 @@ export default function CreateEventModal({
 
             {/* Location field */}
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-900">
+              <label className="block text-sm font-medium mb-1 text-[var(--charcoal-900)]">
                 Location
               </label>
               {location ? (
-                <div className="border border-gray-300 rounded-md p-3 bg-gray-50">
+                <div className="border border-[var(--lavender-200)] rounded-lg p-3 bg-[var(--lavender-50)]">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-800 truncate">{location.name}</p>
-                      <p className="text-sm text-gray-800 truncate">{location.formatted_address}</p>
+                      <p className="font-medium text-[var(--charcoal-900)] truncate">{location.name}</p>
+                      <p className="text-sm text-[var(--charcoal-800)] truncate">{location.formatted_address}</p>
                       {location.rating && (
                         <div className="flex items-center gap-1 mt-1">
-                          <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-4 h-4 text-[var(--buttercream-200)]" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                           </svg>
-                          <span className="text-sm text-gray-900">{location.rating}</span>
+                          <span className="text-sm text-[var(--charcoal-900)]">{location.rating}</span>
                         </div>
                       )}
                     </div>
                     <button
                       type="button"
                       onClick={() => setLocation(null)}
-                      className="text-red-600 hover:text-red-700 text-sm font-medium"
+                      className="text-[var(--peach-500)] hover:text-[var(--peach-400)] text-sm font-medium"
                     >
                       Remove
                     </button>
@@ -278,7 +278,7 @@ export default function CreateEventModal({
                 <button
                   type="button"
                   onClick={() => setShowLocationModal(true)}
-                  className="w-full px-3 py-2 border-2 border-dashed border-gray-300 rounded-md hover:border-blue-400 hover:bg-blue-50 transition text-gray-800 hover:text-blue-600 font-medium flex items-center justify-center gap-2"
+                  className="w-full px-3 py-2 border-2 border-dashed border-[var(--lavender-200)] rounded-lg hover:border-[var(--lavender-400)] hover:bg-[var(--lavender-50)] transition text-[var(--charcoal-800)] hover:text-[var(--lavender-600)] font-medium flex items-center justify-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -287,14 +287,14 @@ export default function CreateEventModal({
                   Add Location
                 </button>
               )}
-              <p className="text-xs text-gray-900 mt-1">
+              <p className="text-xs text-[var(--charcoal-800)] mt-1">
                 Add a venue or meeting place for your event
               </p>
             </div>
 
             {/* Calendar Options Section */}
-            <div className="border-t pt-4 space-y-3">
-              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+            <div className="border-t border-[var(--lavender-100)] pt-4 space-y-3">
+              <h3 className="font-semibold text-[var(--charcoal-900)] flex items-center gap-2">
                 <span>📅</span> Calendar Options
               </h3>
 
@@ -308,13 +308,13 @@ export default function CreateEventModal({
                       setIsRecurring(false);
                     }
                   }}
-                  className="mt-1 w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500"
+                  className="mt-1 w-5 h-5 text-[var(--lavender-500)] border-[var(--lavender-200)] rounded focus:ring-2 focus:ring-[var(--lavender-400)]"
                 />
                 <div>
-                  <span className="font-medium text-gray-900 group-hover:text-purple-600 transition">
+                  <span className="font-medium text-[var(--charcoal-900)] group-hover:text-[var(--lavender-600)] transition">
                     Add to my personal calendar
                   </span>
-                  <p className="text-sm text-gray-600 mt-0.5">
+                  <p className="text-sm text-[var(--charcoal-800)] mt-0.5">
                     This event will appear in your calendar view
                   </p>
                 </div>
@@ -328,20 +328,20 @@ export default function CreateEventModal({
                       type="checkbox"
                       checked={isRecurring}
                       onChange={(e) => setIsRecurring(e.target.checked)}
-                      className="mt-1 w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500"
+                      className="mt-1 w-5 h-5 text-[var(--lavender-500)] border-[var(--lavender-200)] rounded focus:ring-2 focus:ring-[var(--lavender-400)]"
                     />
                     <div>
-                      <span className="font-medium text-gray-900 group-hover:text-purple-600 transition">
+                      <span className="font-medium text-[var(--charcoal-900)] group-hover:text-[var(--lavender-600)] transition">
                         Repeat yearly
                       </span>
-                      <p className="text-sm text-gray-600 mt-0.5">
+                      <p className="text-sm text-[var(--charcoal-800)] mt-0.5">
                         Perfect for birthdays and anniversaries
                       </p>
                     </div>
                   </label>
 
                   {isRecurring && date && (
-                    <p className="text-sm text-purple-600 ml-8">
+                    <p className="text-sm text-[var(--lavender-600)] ml-8">
                       Will remind you every year on {new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
                     </p>
                   )}
@@ -350,8 +350,8 @@ export default function CreateEventModal({
             </div>
 
             {/* Gift Registry Options Section */}
-            <div className="border-t pt-4 space-y-3">
-              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+            <div className="border-t border-[var(--lavender-100)] pt-4 space-y-3">
+              <h3 className="font-semibold text-[var(--charcoal-900)] flex items-center gap-2">
                 <span>🎁</span> Gift Registry Options
               </h3>
 
@@ -360,20 +360,20 @@ export default function CreateEventModal({
                   type="checkbox"
                   checked={registryEnabled}
                   onChange={(e) => setRegistryEnabled(e.target.checked)}
-                  className="mt-1 w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500"
+                  className="mt-1 w-5 h-5 text-[var(--lavender-500)] border-[var(--lavender-200)] rounded focus:ring-2 focus:ring-[var(--lavender-400)]"
                 />
                 <div>
-                  <span className="font-medium text-gray-900 group-hover:text-purple-600 transition">
+                  <span className="font-medium text-[var(--charcoal-900)] group-hover:text-[var(--lavender-600)] transition">
                     Create gift registry
                   </span>
-                  <p className="text-sm text-gray-600 mt-0.5">
+                  <p className="text-sm text-[var(--charcoal-800)] mt-0.5">
                     Friends can contribute to gift items for this event
                   </p>
                 </div>
               </label>
 
               {registryEnabled && (
-                <p className="text-sm text-gray-600 ml-8">
+                <p className="text-sm text-[var(--charcoal-800)] ml-8">
                   You'll be able to add gift items and invite friends after creating the event
                 </p>
               )}
@@ -381,9 +381,9 @@ export default function CreateEventModal({
 
             {/* Validation Warning */}
             {!addToCalendar && !registryEnabled && (
-              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-sm text-amber-700 flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-4 bg-[var(--buttercream-50)] border border-[var(--buttercream-100)] rounded-lg">
+                <p className="text-sm text-[var(--charcoal-900)] flex items-center gap-2">
+                  <svg className="w-5 h-5 text-[var(--peach-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                   Please select at least one: Add to calendar OR Create gift registry
@@ -394,7 +394,7 @@ export default function CreateEventModal({
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2.5 rounded-xl font-bold hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="w-full bg-gradient-to-r from-[var(--lavender-400)] to-[var(--lavender-600)] text-white py-2.5 rounded-xl font-bold hover:from-[var(--lavender-500)] hover:to-[var(--lavender-700)] transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               disabled={loading || (!addToCalendar && !registryEnabled)}
             >
               {loading
