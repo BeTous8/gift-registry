@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import supabase from "../lib/supabase";
 import MiniCalendar from "../components/MiniCalendar";
@@ -34,6 +35,19 @@ function DashboardContent() {
   const [editingEvent, setEditingEvent] = useState(null); // Event being edited
   const [pinnedEvents, setPinnedEvents] = useState(new Set()); // Track pinned event IDs
 
+  // Load pinned events from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('pinnedEvents');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setPinnedEvents(new Set(parsed));
+      }
+    } catch (e) {
+      console.error('Failed to load pinned events:', e);
+    }
+  }, []);
+
   // Handle tab query parameter from URL
   useEffect(() => {
     const tabParam = searchParams.get('tab');
@@ -64,6 +78,12 @@ function DashboardContent() {
         newSet.delete(eventId);
       } else {
         newSet.add(eventId);
+      }
+      // Persist to localStorage
+      try {
+        localStorage.setItem('pinnedEvents', JSON.stringify([...newSet]));
+      } catch (e) {
+        console.error('Failed to save pinned events:', e);
       }
       return newSet;
     });
@@ -848,51 +868,139 @@ function DashboardContent() {
                   /* Home Tab Content - Two main action buttons */
                   <div className="flex items-center justify-center min-h-[60vh]">
                     <div className="text-center max-w-4xl w-full">
-                      <h2 className="text-3xl sm:text-4xl font-bold font-display text-[var(--charcoal-900)] mb-3">
+                      <motion.h2
+                        className="text-3xl sm:text-4xl font-bold font-display text-[var(--charcoal-900)] mb-3"
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                      >
                         What would you like to plan?
-                      </h2>
-                      <p className="text-[var(--charcoal-800)] mb-12 text-lg">Choose an option to get started</p>
+                      </motion.h2>
+                      <motion.p
+                        className="text-[var(--charcoal-800)] mb-12 text-lg"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                      >
+                        Choose an option to get started
+                      </motion.p>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 lg:gap-16">
                         {/* Special Events Card */}
-                        <button
+                        <motion.button
                           onClick={() => setShowCreateEventModal(true)}
-                          className="group p-8 sm:p-10 rounded-3xl bg-[var(--lavender-100)]/40 hover:bg-[var(--lavender-100)]/70 hover:shadow-2xl transition-all transform hover:scale-105 border border-[var(--lavender-200)]/50"
+                          className="group relative p-8 sm:p-10 rounded-3xl bg-[var(--lavender-100)]/40 border border-[var(--lavender-200)]/50 overflow-hidden"
+                          initial={{ opacity: 0, x: -50, rotateY: -10 }}
+                          animate={{ opacity: 1, x: 0, rotateY: 0 }}
+                          transition={{ duration: 0.6, delay: 0.3, type: "spring", stiffness: 100 }}
+                          whileHover={{
+                            scale: 1.03,
+                            boxShadow: "0 25px 50px -12px rgba(184, 169, 232, 0.4)",
+                            transition: { duration: 0.3 }
+                          }}
+                          whileTap={{ scale: 0.98 }}
                         >
-                          <div className="mb-6 flex justify-center">
-                            <img
-                              src="/special-ceremony.png"
-                              alt="Special Events"
-                              className="w-40 h-40 sm:w-52 sm:h-52 object-contain"
-                            />
+                          {/* Animated gradient background on hover */}
+                          <motion.div
+                            className="absolute inset-0 bg-gradient-to-br from-[var(--lavender-200)]/0 via-[var(--lavender-100)]/0 to-[var(--peach-100)]/0 rounded-3xl"
+                            whileHover={{
+                              background: "linear-gradient(135deg, rgba(184, 169, 232, 0.3) 0%, rgba(237, 233, 254, 0.5) 50%, rgba(255, 205, 178, 0.3) 100%)"
+                            }}
+                            transition={{ duration: 0.3 }}
+                          />
+
+                          <div className="relative z-10">
+                            <motion.div
+                              className="mb-6 flex justify-center"
+                              animate={{ y: [0, -8, 0] }}
+                              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                            >
+                              <motion.img
+                                src="/special-ceremony.png"
+                                alt="Special Events"
+                                className="w-40 h-40 sm:w-52 sm:h-52 object-contain"
+                                whileHover={{ scale: 1.1, rotate: [0, -3, 3, 0] }}
+                                transition={{ duration: 0.4 }}
+                              />
+                            </motion.div>
+                            <h3 className="text-2xl font-bold font-display text-[var(--charcoal-900)] mb-3 group-hover:text-[var(--lavender-600)] transition-colors duration-300">
+                              Special Events
+                            </h3>
+                            <p className="text-[var(--charcoal-800)]">
+                              Birthdays, Weddings, Anniversaries with gift registry
+                            </p>
                           </div>
-                          <h3 className="text-2xl font-bold font-display text-[var(--charcoal-900)] mb-3 group-hover:text-[var(--lavender-600)] transition">
-                            Special Events
-                          </h3>
-                          <p className="text-[var(--charcoal-800)]">
-                            Birthdays, Weddings, Anniversaries with gift registry
-                          </p>
-                        </button>
+
+                          {/* Sparkle effect on hover */}
+                          <motion.div
+                            className="absolute top-4 right-4 w-2 h-2 bg-[var(--lavender-400)] rounded-full opacity-0 group-hover:opacity-100"
+                            animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                            transition={{ duration: 1.5, repeat: Infinity }}
+                          />
+                          <motion.div
+                            className="absolute bottom-6 left-6 w-1.5 h-1.5 bg-[var(--peach-400)] rounded-full opacity-0 group-hover:opacity-100"
+                            animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
+                            transition={{ duration: 1.2, repeat: Infinity, delay: 0.3 }}
+                          />
+                        </motion.button>
 
                         {/* Casual Meet-up Card */}
-                        <button
+                        <motion.button
                           onClick={() => setShowCasualMeetupModal(true)}
-                          className="group p-8 sm:p-10 rounded-3xl bg-[var(--mint-100)]/40 hover:bg-[var(--mint-100)]/70 hover:shadow-2xl transition-all transform hover:scale-105 border border-[var(--mint-200)]/50"
+                          className="group relative p-8 sm:p-10 rounded-3xl bg-[var(--mint-100)]/40 border border-[var(--mint-200)]/50 overflow-hidden"
+                          initial={{ opacity: 0, x: 50, rotateY: 10 }}
+                          animate={{ opacity: 1, x: 0, rotateY: 0 }}
+                          transition={{ duration: 0.6, delay: 0.4, type: "spring", stiffness: 100 }}
+                          whileHover={{
+                            scale: 1.03,
+                            boxShadow: "0 25px 50px -12px rgba(181, 234, 215, 0.4)",
+                            transition: { duration: 0.3 }
+                          }}
+                          whileTap={{ scale: 0.98 }}
                         >
-                          <div className="mb-6 flex justify-center">
-                            <img
-                              src="/casual-meetup.png"
-                              alt="Casual Meet-up"
-                              className="w-40 h-40 sm:w-52 sm:h-52 object-contain"
-                            />
+                          {/* Animated gradient background on hover */}
+                          <motion.div
+                            className="absolute inset-0 bg-gradient-to-br from-[var(--mint-200)]/0 via-[var(--mint-100)]/0 to-[var(--buttercream-100)]/0 rounded-3xl"
+                            whileHover={{
+                              background: "linear-gradient(135deg, rgba(181, 234, 215, 0.3) 0%, rgba(208, 245, 229, 0.5) 50%, rgba(255, 243, 205, 0.3) 100%)"
+                            }}
+                            transition={{ duration: 0.3 }}
+                          />
+
+                          <div className="relative z-10">
+                            <motion.div
+                              className="mb-6 flex justify-center"
+                              animate={{ y: [0, -8, 0] }}
+                              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                            >
+                              <motion.img
+                                src="/casual-meetup.png"
+                                alt="Casual Meet-up"
+                                className="w-40 h-40 sm:w-52 sm:h-52 object-contain"
+                                whileHover={{ scale: 1.1, rotate: [0, 3, -3, 0] }}
+                                transition={{ duration: 0.4 }}
+                              />
+                            </motion.div>
+                            <h3 className="text-2xl font-bold font-display text-[var(--charcoal-900)] mb-3 group-hover:text-[var(--mint-400)] transition-colors duration-300">
+                              Casual Meet-up
+                            </h3>
+                            <p className="text-[var(--charcoal-800)]">
+                              Coffee, Dinner, Book Club - quick to set up
+                            </p>
                           </div>
-                          <h3 className="text-2xl font-bold font-display text-[var(--charcoal-900)] mb-3 group-hover:text-[var(--mint-400)] transition">
-                            Casual Meet-up
-                          </h3>
-                          <p className="text-[var(--charcoal-800)]">
-                            Coffee, Dinner, Book Club - quick to set up
-                          </p>
-                        </button>
+
+                          {/* Sparkle effect on hover */}
+                          <motion.div
+                            className="absolute top-4 left-4 w-2 h-2 bg-[var(--mint-400)] rounded-full opacity-0 group-hover:opacity-100"
+                            animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                            transition={{ duration: 1.5, repeat: Infinity }}
+                          />
+                          <motion.div
+                            className="absolute bottom-6 right-6 w-1.5 h-1.5 bg-[var(--buttercream-200)] rounded-full opacity-0 group-hover:opacity-100"
+                            animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
+                            transition={{ duration: 1.2, repeat: Infinity, delay: 0.3 }}
+                          />
+                        </motion.button>
                       </div>
                     </div>
                   </div>
