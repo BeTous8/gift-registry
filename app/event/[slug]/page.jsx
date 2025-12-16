@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -14,8 +14,12 @@ import { parseLocalDate } from "../../lib/dateUtils";
 
 export default function ViewEventPage() {
   const { slug } = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { showToast } = useToast();
+
+  // Get the source tab for back navigation (default to my-events)
+  const fromTab = searchParams.get('from') || 'my-events';
   const [event, setEvent] = useState(null);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -93,7 +97,7 @@ export default function ViewEventPage() {
     const { data: eventData, error: eventError } = await supabase
       .from("events")
       .select(
-        "id, title, slug, description, event_date, event_type, location, user_id, invite_code, items(id, title, price_cents, current_amount_cents, product_link, image_url, is_fulfilled, fulfilled_at)"
+        "id, title, slug, description, event_date, event_type, event_category, registry_enabled, location, user_id, invite_code, items(id, title, price_cents, current_amount_cents, product_link, image_url, is_fulfilled, fulfilled_at)"
       )
       .eq("slug", slug)
       .single();
@@ -405,7 +409,7 @@ export default function ViewEventPage() {
       const { data: eventData, error: eventError } = await supabase
         .from("events")
         .select(
-          "id, title, slug, description, event_date, event_type, location, user_id, invite_code, items(id, title, price_cents, current_amount_cents, product_link, image_url, is_fulfilled, fulfilled_at)"
+          "id, title, slug, description, event_date, event_type, event_category, registry_enabled, location, user_id, invite_code, items(id, title, price_cents, current_amount_cents, product_link, image_url, is_fulfilled, fulfilled_at)"
         )
         .eq("slug", slug)
         .single();
@@ -648,8 +652,15 @@ export default function ViewEventPage() {
     handleCloseDeleteDialog();
   };
 
+  // Determine if this is a casual meetup
+  const isCasualMeetup = event?.event_category === 'casual' || event?.registry_enabled === false;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-blue-200 to-blue-50 py-10">
+    <div className={`min-h-screen py-10 ${
+      isCasualMeetup
+        ? 'bg-gradient-to-br from-teal-100 via-cyan-100 to-teal-50'
+        : 'bg-gradient-to-br from-blue-100 via-blue-200 to-blue-50'
+    }`}>
       <div className="max-w-6xl mx-auto px-4">
         {/* Success Banner */}
         {successBanner && (
@@ -736,40 +747,69 @@ export default function ViewEventPage() {
             {/* Header with Dashboard, Title, and Share in one row */}
             <div className="mb-8">
               <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-4">
-                {/* Left: Dashboard button */}
+                {/* Left: Back button - returns to source tab */}
                 {user && (
                   <Link
-                    href="/dashboard"
-                    className="inline-flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-blue-50 transition border border-blue-200 self-start"
+                    href={`/dashboard?tab=${fromTab}`}
+                    className={`inline-flex items-center gap-2 bg-white px-4 py-2 rounded-lg font-semibold shadow-md transition self-start ${
+                      isCasualMeetup
+                        ? 'text-teal-700 hover:bg-teal-50 border border-teal-200'
+                        : 'text-blue-700 hover:bg-blue-50 border border-blue-200'
+                    }`}
                   >
-                    ← Dashboard
+                    ← {fromTab === 'joined' ? 'Joined Events' :
+                       fromTab === 'upcoming' ? 'Upcoming' :
+                       fromTab === 'invitations' ? 'Invitations' :
+                       fromTab === 'home' ? 'Home' : 'My Events'}
                   </Link>
                 )}
 
                 {/* Center: Title, Date, Event Type */}
                 <div className="flex-1 text-center">
-                  <h1 className="text-3xl lg:text-4xl font-bold text-blue-900 mb-2">{event.title}</h1>
+                  <h1 className={`text-3xl lg:text-4xl font-bold mb-2 ${
+                    isCasualMeetup ? 'text-teal-900' : 'text-blue-900'
+                  }`}>{event.title}</h1>
                   {event.event_date && (
-                    <div className="text-blue-600 text-md font-medium mb-2">
+                    <div className={`text-md font-medium mb-2 ${
+                      isCasualMeetup ? 'text-teal-600' : 'text-blue-600'
+                    }`}>
                       {formatDate(event.event_date)}
                     </div>
                   )}
                   <div>
                     <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                      (event.event_type !== 'casual-meetup')
-                        ? 'bg-purple-100 text-purple-700'
-                        : 'bg-green-100 text-green-700'
+                      isCasualMeetup
+                        ? 'bg-teal-100 text-teal-700'
+                        : 'bg-purple-100 text-purple-700'
                     }`}>
-                      {(event.event_type !== 'casual-meetup') ? '🎁 Gift Registry' : '📍 Casual Meetup'}
+                      {isCasualMeetup ? '☕ Casual Meetup' : '🎁 Gift Registry'}
                     </span>
                   </div>
+
+                  {/* Location - prominent for casual meetups */}
+                  {isCasualMeetup && event.location && (
+                    <div className="mt-4 inline-flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-md border border-teal-200">
+                      <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <div className="text-left">
+                        <p className="font-medium text-gray-900">{event.location.name}</p>
+                        <p className="text-sm text-gray-600">{event.location.formatted_address}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Right: Share button */}
                 {user && (
                   <button
                     onClick={handleShare}
-                    className="inline-flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-blue-50 transition border border-blue-200 self-start"
+                    className={`inline-flex items-center gap-2 bg-white px-4 py-2 rounded-lg font-semibold shadow-md transition self-start ${
+                      isCasualMeetup
+                        ? 'text-teal-700 hover:bg-teal-50 border border-teal-200'
+                        : 'text-blue-700 hover:bg-blue-50 border border-blue-200'
+                    }`}
                     title="Copy link to share"
                   >
                     {copied ? (
@@ -982,7 +1022,7 @@ export default function ViewEventPage() {
               {/* Right Content */}
               <div className="flex-1">
                 {/* Location Display - for casual meetups */}
-                {event.event_type === 'casual-meetup' && event.location && (
+                {isCasualMeetup && event.location && (
                   <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                     <h3 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                       <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1082,8 +1122,8 @@ export default function ViewEventPage() {
                   </div>
                 )}
 
-                {/* Items Grid - only for gift registries (or old events without event_type) */}
-                {(event.event_type !== 'casual-meetup') && (
+                {/* Items Grid - only for gift registries (not casual meetups) */}
+                {!isCasualMeetup && (
                   <>
                     {/* Add Item Button - shown for owners */}
                     {isOwner && !editingItemId && (

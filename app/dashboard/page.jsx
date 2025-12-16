@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import supabase from "../lib/supabase";
 import MiniCalendar from "../components/MiniCalendar";
 import CreateEventModal from "../components/CreateEventModal";
+import CasualMeetupModal from "../components/CasualMeetupModal";
 import { parseLocalDate, formatDateString, getDaysUntil, isWithinDays } from "../lib/dateUtils";
 
 export default function DashboardPage() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState(null);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,13 +22,52 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true); // Desktop: open by default
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Mobile: closed by default
   const [activeFilter, setActiveFilter] = useState("all"); // "all", "upcoming"
-  const [activeTab, setActiveTab] = useState("my-events"); // "my-events", "joined", "fulfillments", "invitations"
+  const [activeTab, setActiveTab] = useState("home"); // "home", "my-events", "joined", "fulfillments", "invitations"
   const [joinedEvents, setJoinedEvents] = useState([]);
   const [pendingInvitations, setPendingInvitations] = useState([]);
   const [respondingToInvite, setRespondingToInvite] = useState(null);
   const [fulfillments, setFulfillments] = useState([]);
   const [loadingFulfillments, setLoadingFulfillments] = useState(false);
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+  const [showCasualMeetupModal, setShowCasualMeetupModal] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState(null); // Track which event's menu is open
+  const [editingEvent, setEditingEvent] = useState(null); // Event being edited
+  const [pinnedEvents, setPinnedEvents] = useState(new Set()); // Track pinned event IDs
+
+  // Handle tab query parameter from URL
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['home', 'my-events', 'upcoming', 'joined', 'invitations', 'fulfillments'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (openMenuId !== null) {
+        setOpenMenuId(null);
+      }
+    }
+
+    if (openMenuId !== null) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [openMenuId]);
+
+  // Toggle pin status for an event
+  function togglePin(eventId) {
+    setPinnedEvents(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(eventId)) {
+        newSet.delete(eventId);
+      } else {
+        newSet.add(eventId);
+      }
+      return newSet;
+    });
+  }
 
   // Helper function to get user's first name
   function getFirstName(user) {
@@ -171,12 +212,11 @@ export default function DashboardPage() {
         return;
       }
 
-      // Fetch only the user's events
+      // Fetch all user's events (both registries and casual meetups)
       const { data, error } = await supabase
         .from("events")
-        .select("id, title, slug, event_date, description, items(current_amount_cents)")
+        .select("id, title, slug, event_date, description, event_category, registry_enabled, location, items(current_amount_cents)")
         .eq("user_id", userId)
-        .eq("registry_enabled", true)  // Only show registry events
         .order("event_date", { ascending: false });
 
       if (error) {
@@ -188,9 +228,8 @@ export default function DashboardPage() {
             // Retry with refreshed session
             const { data: retryData, error: retryError } = await supabase
               .from("events")
-              .select("id, title, slug, event_date, description, items(current_amount_cents)")
+              .select("id, title, slug, event_date, description, event_category, registry_enabled, location, items(current_amount_cents)")
               .eq("user_id", refreshData.session.user.id)
-              .eq("registry_enabled", true)  // Only show registry events
               .order("event_date", { ascending: false });
             
             if (retryError) {
@@ -454,23 +493,35 @@ export default function DashboardPage() {
 
   // Handle card click to navigate to event
   const handleCardClick = (slug) => {
-    router.push(`/event/${slug}`);
+    router.push(`/event/${slug}?from=${activeTab}`);
   };
 
   // Get events to display based on active tab
   const getDisplayEvents = () => {
+    let filteredEvents = [];
+
     if (activeTab === "joined") {
-      return joinedEvents;
-    }
-    if (activeTab === "upcoming") {
+      filteredEvents = joinedEvents;
+    } else if (activeTab === "upcoming") {
       // Show events within the next 7 days
-      return events.filter((event) => {
+      filteredEvents = events.filter((event) => {
         if (!event.event_date) return false;
         return isWithinDays(event.event_date, 7);
       });
+    } else {
+      // For "my-events" tab, show all events
+      filteredEvents = events;
     }
-    // For "my-events" tab, show all events
-    return events;
+
+    // Sort: pinned events first, then by original order
+    return filteredEvents.sort((a, b) => {
+      const aIsPinned = pinnedEvents.has(a.id);
+      const bIsPinned = pinnedEvents.has(b.id);
+
+      if (aIsPinned && !bIsPinned) return -1;
+      if (!aIsPinned && bIsPinned) return 1;
+      return 0;
+    });
   };
 
   const displayEvents = getDisplayEvents();
@@ -504,17 +555,27 @@ export default function DashboardPage() {
     }
   };
 
-  // Helper function to get styling based on event type
-  const getEventStyling = (eventType) => {
-    if (eventType === 'casual-meetup') {
+  // Helper function to get styling based on event category
+  const getEventStyling = (eventCategory) => {
+    if (eventCategory === 'casual') {
       return 'from-teal-50 to-cyan-50 border-teal-200';
     }
-    // Default: gift-registry or special ceremony
+    // Default: gift-registry or special ceremony (event_category: "other", "birthday", "anniversary", "wedding")
     return 'from-pink-50 to-purple-50 border-purple-200';
   };
 
   // Navigation menu items
   const navItems = [
+    {
+      name: "Home",
+      href: "/dashboard",
+      tab: "home",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+      ),
+    },
     {
       name: "My Events",
       href: "/dashboard",
@@ -578,15 +639,6 @@ export default function DashboardPage() {
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      ),
-    },
-    {
-      name: "Create Event",
-      href: "/create-event",
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
         </svg>
       ),
     },
@@ -768,21 +820,12 @@ export default function DashboardPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full">
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
-                {user ? (getFirstName(user) ? `Welcome, ${getFirstName(user)}! 🎉` : 'Dashboard') : 'Dashboard'}
+                {user ? (getFirstName(user) ? `Welcome, ${getFirstName(user)}!` : 'Dashboard') : 'Dashboard'}
               </h1>
               {user && (
                 <p className="text-gray-900 text-sm mt-2">{user.email}</p>
               )}
             </div>
-            <button
-              onClick={() => setShowCreateEventModal(true)}
-              className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 mt-4 sm:mt-0 flex items-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Create New Event
-            </button>
           </div>
         </header>
 
@@ -799,8 +842,60 @@ export default function DashboardPage() {
               </div>
             ) : (
               <>
-                {/* No events state */}
-                {activeTab === "invitations" ? (
+                {/* Tab Content */}
+                {activeTab === "home" ? (
+                  /* Home Tab Content - Two main action buttons */
+                  <div className="flex items-center justify-center min-h-[60vh]">
+                    <div className="text-center max-w-4xl w-full">
+                      <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
+                        What would you like to plan?
+                      </h2>
+                      <p className="text-gray-600 mb-12 text-lg">Choose an option to get started</p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 lg:gap-16">
+                        {/* Special Events Card */}
+                        <button
+                          onClick={() => setShowCreateEventModal(true)}
+                          className="group p-8 sm:p-10 rounded-3xl bg-purple-100/40 hover:bg-purple-100/70 hover:shadow-2xl transition-all transform hover:scale-105"
+                        >
+                          <div className="mb-6 flex justify-center">
+                            <img
+                              src="/special-ceremony.png"
+                              alt="Special Events"
+                              className="w-40 h-40 sm:w-52 sm:h-52 object-contain"
+                            />
+                          </div>
+                          <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-purple-600 transition">
+                            Special Events
+                          </h3>
+                          <p className="text-gray-600">
+                            Birthdays, Weddings, Anniversaries with gift registry
+                          </p>
+                        </button>
+
+                        {/* Casual Meet-up Card */}
+                        <button
+                          onClick={() => setShowCasualMeetupModal(true)}
+                          className="group p-8 sm:p-10 rounded-3xl bg-teal-100/40 hover:bg-teal-100/70 hover:shadow-2xl transition-all transform hover:scale-105"
+                        >
+                          <div className="mb-6 flex justify-center">
+                            <img
+                              src="/casual-meetup.png"
+                              alt="Casual Meet-up"
+                              className="w-40 h-40 sm:w-52 sm:h-52 object-contain"
+                            />
+                          </div>
+                          <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-teal-600 transition">
+                            Casual Meet-up
+                          </h3>
+                          <p className="text-gray-600">
+                            Coffee, Dinner, Book Club - quick to set up
+                          </p>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : activeTab === "invitations" ? (
                   /* Invitations Tab Content */
                   <div className="space-y-4">
                     <h2 className="text-xl font-bold text-gray-900 mb-4">Pending Invitations</h2>
@@ -1012,27 +1107,88 @@ export default function DashboardPage() {
                     <div className="grid gap-6 md:grid-cols-2">
                       {displayEvents.map((event, index) => {
                         const dateInfo = formatEventDate(event.event_date);
-                        const gradientClass = getEventStyling(event.event_type);
+                        const gradientClass = getEventStyling(event.event_category);
                         return (
                           <div
                             key={event.id}
                             className={`bg-gradient-to-br ${gradientClass} rounded-2xl p-6 flex flex-col justify-between relative cursor-pointer hover:shadow-2xl transition-all transform hover:-translate-y-2 border-2 group`}
                             onClick={() => handleCardClick(event.slug)}
                           >
-                            {/* Delete button - only show for owned events */}
+                            {/* Three-dot menu - only show for owned events */}
                             {activeTab !== "joined" && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteClick(event);
-                                }}
-                                className="absolute top-3 right-3 bg-white/90 hover:bg-red-500 text-gray-900 hover:text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg transition-all shadow-md z-10 opacity-0 group-hover:opacity-100"
-                                title="Delete event"
-                                disabled={deletingEventId === event.id}
-                              >
-                                ×
-                              </button>
+                              <div className="absolute top-3 right-3 z-10">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenMenuId(openMenuId === event.id ? null : event.id);
+                                  }}
+                                  className="bg-white/90 hover:bg-white text-gray-900 rounded-full w-8 h-8 flex items-center justify-center transition-all shadow-md"
+                                  title="More options"
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                  </svg>
+                                </button>
+
+                                {/* Dropdown Menu */}
+                                {openMenuId === event.id && (
+                                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-20">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setOpenMenuId(null);
+                                        setEditingEvent(event);
+                                        setShowCreateEventModal(true);
+                                      }}
+                                      className="w-full text-left px-4 py-2 text-sm text-gray-900 hover:bg-purple-50 flex items-center gap-2"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                      </svg>
+                                      Edit Event
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setOpenMenuId(null);
+                                        togglePin(event.id);
+                                      }}
+                                      className={`w-full text-left px-4 py-2 text-sm hover:bg-purple-50 flex items-center gap-2 ${
+                                        pinnedEvents.has(event.id) ? 'text-red-600' : 'text-gray-900'
+                                      }`}
+                                    >
+                                      <svg className="w-4 h-4" fill={pinnedEvents.has(event.id) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                      </svg>
+                                      {pinnedEvents.has(event.id) ? 'Unpin' : 'Pin to Top'}
+                                    </button>
+                                    <hr className="my-1 border-gray-200" />
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setOpenMenuId(null);
+                                        handleDeleteClick(event);
+                                      }}
+                                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                      Delete Event
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             )}
+                            {/* Pinned badge */}
+                            {pinnedEvents.has(event.id) && activeTab !== "joined" && (
+                              <div className="absolute top-3 left-3 z-10">
+                                <svg className="w-6 h-6 text-red-600 drop-shadow-md" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                </svg>
+                              </div>
+                            )}
+
                             {/* Joined badge for joined events */}
                             {activeTab === "joined" && (
                               <div className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
@@ -1041,7 +1197,7 @@ export default function DashboardPage() {
                             )}
 
                             {/* Event Header */}
-                            <div className="mb-4">
+                            <div className={`mb-4 ${pinnedEvents.has(event.id) && activeTab !== "joined" ? 'pl-6' : ''}`}>
                               <div className="flex items-start justify-between mb-3">
                                 <h3 className="text-xl font-bold text-gray-900 pr-8 line-clamp-2">
                                   {event.title}
@@ -1143,19 +1299,52 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Create Event Modal */}
+        {/* Create/Edit Event Modal */}
         {showCreateEventModal && (
           <CreateEventModal
             defaultMode="registry"
-            onClose={() => setShowCreateEventModal(false)}
+            prefillData={editingEvent ? {
+              title: editingEvent.title,
+              event_date: editingEvent.event_date,
+              description: editingEvent.description,
+              event_type: editingEvent.event_category === "casual" ? "casual-meetup" : "gift-registry",
+              location: editingEvent.location,
+              registry_enabled: editingEvent.registry_enabled,
+              is_recurring: editingEvent.is_recurring,
+              add_to_calendar: true // Assume calendar is enabled if editing
+            } : {}}
+            isEditing={!!editingEvent}
+            eventId={editingEvent?.id}
+            onClose={() => {
+              setShowCreateEventModal(false);
+              setEditingEvent(null);
+            }}
+            onSuccess={(newEvent) => {
+              // Refresh events after creation/edit
+              if (user) {
+                fetchEvents(user.id);
+              }
+              setEditingEvent(null);
+              // If registry was created (not editing), redirect to the event page
+              if (!editingEvent && newEvent.slug) {
+                router.push(`/event/${newEvent.slug}?from=my-events`);
+              }
+            }}
+          />
+        )}
+
+        {/* Casual Meetup Modal */}
+        {showCasualMeetupModal && (
+          <CasualMeetupModal
+            onClose={() => setShowCasualMeetupModal(false)}
             onSuccess={(newEvent) => {
               // Refresh events after creation
               if (user) {
                 fetchEvents(user.id);
               }
-              // If registry was created, redirect to the event page
-              if (newEvent.slug) {
-                router.push(`/event/${newEvent.slug}`);
+              // Navigate to the event page
+              if (newEvent?.slug) {
+                router.push(`/event/${newEvent.slug}?from=my-events`);
               }
             }}
           />

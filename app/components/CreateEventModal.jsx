@@ -13,12 +13,22 @@ import supabase from "../lib/supabase";
  * @param {function} onClose - Function to call when modal is closed
  * @param {function} onSuccess - Function to call when event is created successfully
  * @param {object} prefillData - Optional data to prefill the form
+ * @param {boolean} isEditing - Whether we're editing an existing event
+ * @param {string} eventId - ID of the event being edited (required when isEditing is true)
  */
-export default function CreateEventModal({ defaultMode = "registry", onClose, onSuccess, prefillData = {} }) {
+export default function CreateEventModal({
+  defaultMode = "registry",
+  onClose,
+  onSuccess,
+  prefillData = {},
+  isEditing = false,
+  eventId = null
+}) {
   const [title, setTitle] = useState(prefillData.title || "");
   const [date, setDate] = useState(prefillData.event_date || "");
   const [description, setDescription] = useState(prefillData.description || "");
-  const [eventType, setEventType] = useState(prefillData.event_type || "gift-registry");
+  // Event type is now selected on Home page before opening modal - always "gift-registry" for this modal
+  const eventType = "gift-registry";
   const [location, setLocation] = useState(prefillData.location || null);
   const [showLocationModal, setShowLocationModal] = useState(false);
 
@@ -74,50 +84,84 @@ export default function CreateEventModal({ defaultMode = "registry", onClose, on
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
-        setError("You must be logged in to create an event");
+        setError("You must be logged in to " + (isEditing ? "edit" : "create") + " an event");
         setLoading(false);
         return;
       }
 
-      // Generate slug and invite code only if registry enabled
-      const slug = registryEnabled ? generateSlug(title) : null;
-      const inviteCode = registryEnabled ? generateInviteCode() : null;
-
       // Map event type to event category for unified events table
       const eventCategory = eventType === "gift-registry" ? "other" : "casual";
 
-      // Insert event into database
-      const { data, error: insertError } = await supabase
-        .from("events")
-        .insert({
-          user_id: session.user.id,
-          title: title.trim(),
-          slug: slug,
-          description: description.trim() || null,
-          event_date: date || null,
-          event_category: eventCategory,
-          invite_code: inviteCode,
-          location: location || null,
-          is_recurring: addToCalendar ? isRecurring : false,
-          registry_enabled: registryEnabled,
-          is_private: false // Default to public
-        })
-        .select()
-        .single();
+      if (isEditing && eventId) {
+        // UPDATE existing event via API
+        const response = await fetch(`/api/events/${eventId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({
+            title: title.trim(),
+            description: description.trim() || null,
+            event_date: date || null,
+            event_type: eventType,
+            event_category: eventCategory,
+            location: location || null,
+            is_recurring: addToCalendar ? isRecurring : false,
+            registry_enabled: registryEnabled,
+          })
+        });
 
-      setLoading(false);
+        const result = await response.json();
+        setLoading(false);
 
-      if (insertError) {
-        setError(insertError.message || "Failed to create event. Please try again.");
-        return;
+        if (!response.ok) {
+          setError(result.error || "Failed to update event. Please try again.");
+          return;
+        }
+
+        // Success - call onSuccess callback and close modal
+        onSuccess(result.event);
+        onClose();
+      } else {
+        // CREATE new event
+        // Generate slug and invite code only if registry enabled
+        const slug = registryEnabled ? generateSlug(title) : null;
+        const inviteCode = registryEnabled ? generateInviteCode() : null;
+
+        // Insert event into database
+        const { data, error: insertError } = await supabase
+          .from("events")
+          .insert({
+            user_id: session.user.id,
+            title: title.trim(),
+            slug: slug,
+            description: description.trim() || null,
+            event_date: date || null,
+            event_category: eventCategory,
+            invite_code: inviteCode,
+            location: location || null,
+            is_recurring: addToCalendar ? isRecurring : false,
+            registry_enabled: registryEnabled,
+            is_private: false // Default to public
+          })
+          .select()
+          .single();
+
+        setLoading(false);
+
+        if (insertError) {
+          setError(insertError.message || "Failed to create event. Please try again.");
+          return;
+        }
+
+        // Success - call onSuccess callback and close modal
+        onSuccess(data);
+        onClose();
       }
-
-      // Success - call onSuccess callback and close modal
-      onSuccess(data);
-      onClose();
     } catch (err) {
-      console.error('Error creating event:', err);
-      setError('Failed to create event. Please try again.');
+      console.error(`Error ${isEditing ? 'updating' : 'creating'} event:`, err);
+      setError(`Failed to ${isEditing ? 'update' : 'create'} event. Please try again.`);
       setLoading(false);
     }
   };
@@ -135,7 +179,7 @@ export default function CreateEventModal({ defaultMode = "registry", onClose, on
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
-              Create New Event
+              {isEditing ? "Edit Event" : "Create New Event"}
             </h2>
             <button
               onClick={onClose}
@@ -170,78 +214,6 @@ export default function CreateEventModal({ defaultMode = "registry", onClose, on
                 required
                 placeholder="Enter event title"
               />
-            </div>
-
-            {/* Event Type Selection with PNG Images */}
-            <div>
-              <label className="block text-sm font-medium mb-2 text-gray-900">
-                Event Type <span className="text-red-500">*</span>
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Special Ceremony Card */}
-                <button
-                  type="button"
-                  onClick={() => setEventType("gift-registry")}
-                  className={`relative p-4 rounded-2xl border-3 transition-all transform hover:scale-105 ${
-                    eventType === "gift-registry"
-                      ? "border-purple-500 bg-gradient-to-br from-pink-50 to-rose-50 shadow-lg ring-2 ring-purple-500"
-                      : "border-gray-200 bg-white hover:border-purple-300 hover:shadow-md"
-                  }`}
-                >
-                  {/* Selected checkmark */}
-                  {eventType === "gift-registry" && (
-                    <div className="absolute top-2 right-2 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                  )}
-
-                  {/* Image illustration */}
-                  <div className="mb-3 flex justify-center">
-                    <img
-                      src="/special-ceremony.png"
-                      alt="Special Ceremony"
-                      className="w-40 h-40 object-contain rounded-2xl"
-                    />
-                  </div>
-
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">Special Ceremony</h3>
-                  <p className="text-xs text-gray-600">Birthday, Wedding, etc.</p>
-                </button>
-
-                {/* Casual Meetup Card */}
-                <button
-                  type="button"
-                  onClick={() => setEventType("casual-meetup")}
-                  className={`relative p-4 rounded-2xl border-3 transition-all transform hover:scale-105 ${
-                    eventType === "casual-meetup"
-                      ? "border-teal-500 bg-gradient-to-br from-teal-50 to-cyan-50 shadow-lg ring-2 ring-teal-500"
-                      : "border-gray-200 bg-white hover:border-teal-300 hover:shadow-md"
-                  }`}
-                >
-                  {/* Selected checkmark */}
-                  {eventType === "casual-meetup" && (
-                    <div className="absolute top-2 right-2 w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                  )}
-
-                  {/* Image illustration */}
-                  <div className="mb-3 flex justify-center">
-                    <img
-                      src="/casual-meetup.png"
-                      alt="Casual Meet-up"
-                      className="w-40 h-40 object-contain rounded-2xl"
-                    />
-                  </div>
-
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">Casual Meet-up</h3>
-                  <p className="text-xs text-gray-600">Coffee, Hangout, Book Club</p>
-                </button>
-              </div>
             </div>
 
             {/* Event Date */}
@@ -425,7 +397,9 @@ export default function CreateEventModal({ defaultMode = "registry", onClose, on
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2.5 rounded-xl font-bold hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               disabled={loading || (!addToCalendar && !registryEnabled)}
             >
-              {loading ? "Creating Event..." : "Create Event"}
+              {loading
+                ? (isEditing ? "Updating Event..." : "Creating Event...")
+                : (isEditing ? "Update Event" : "Create Event")}
             </button>
           </form>
         </div>
