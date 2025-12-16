@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import supabase from "../lib/supabase";
@@ -9,7 +9,7 @@ import CreateEventModal from "../components/CreateEventModal";
 import CasualMeetupModal from "../components/CasualMeetupModal";
 import { parseLocalDate, formatDateString, getDaysUntil, isWithinDays } from "../lib/dateUtils";
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -1352,5 +1352,17 @@ export default function DashboardPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-[var(--cloud-50)] via-white to-[var(--lavender-50)] flex items-center justify-center">
+        <div className="text-[var(--charcoal-800)]">Loading...</div>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   );
 }
