@@ -26,6 +26,9 @@
 - ✅ **Event Slug Page** - Added two-tab system for special events:
   - Gift Registry tab (items + Amazon Quick Add)
   - Location tab (view/add venue with Google Maps integration)
+- ✅ **Casual Meetup Tabs** - Added two-tab system for casual meetups:
+  - In Person tab (add/view physical location via Google Places)
+  - Online tab (add/view Zoom, Google Meet, or Teams links)
 - ✅ **CreateEventModal** - Updated with new color palette
 - ✅ **CasualMeetupModal** - Updated with new color palette
 - ✅ **globals.css** - Added CSS variables for entire color palette
@@ -90,63 +93,19 @@
 
 ---
 
-### 🚨 CURRENT PRIORITY - Calendar & Registry Unification
+### ✅ COMPLETED - Calendar & Registry Unification (December 2025)
 
-**Status:** ✅ Phases 1-3 COMPLETE (Database + API + Frontend) → Phases 4-6 TODO
-**Branch:** `feature/calendar-unification`
-**Implementation Plan:** See `C:\Users\bntou\.claude\plans\zany-beaming-scott.md`
-**Last Commit:** `2dcd845` - Merge calendar and registry systems (Phases 1-3)
+**Status:** ALL PHASES COMPLETE
+**Branch:** `feature/calendar-unification` (merged to main)
 
-**What Works Now:**
+**What's Working:**
 - ✅ Unified `events` table (calendar + registry in one table)
 - ✅ Calendar events created via `/api/calendar/events` (`registry_enabled=false`)
 - ✅ Dashboard shows only registries (filters `registry_enabled=true`)
-- ✅ MiniCalendar shows all events with colored dots (🟣 Registry, 🌸 Important, 🟢 Casual)
+- ✅ MiniCalendar shows all events with colored dots
 - ✅ Full Calendar page displays all events correctly
-
-**Completed Phases (Dec 12, 2025):**
-- ✅ **Phase 0**: Database backup/rollback scripts created
-- ✅ **Phase 1**: Database migration (merged `user_events` → `events`)
-  - Added `registry_enabled`, `is_recurring`, `event_category` columns
-  - Made `slug`/`invite_code` nullable (NULL for calendar-only)
-  - Fixed timestamp type mismatches in `get_user_events_in_range` function
-  - Dropped old `user_events` table
-- ✅ **Phase 2**: Calendar API routes updated
-  - POST creates calendar-only events
-  - PUT/DELETE only operate on calendar events
-  - Maps old `event_type` → new `event_category`
-- ✅ **Phase 3**: Frontend components updated
-  - Dashboard filters for registries only
-  - MiniCalendar shows 3-color dot system
-  - Calendar page uses unified API
-
-**TODO Phases (Resume Tomorrow):**
-- [ ] **Phase 4**: Unified Event Creation Modal
-  - Build single modal used by both Dashboard and Calendar
-  - Let users choose: Calendar-only, Registry-only, or Both
-  - Replace separate creation flows
-- [ ] **Phase 5**: "Spawn Registry from Recurring Event" Feature
-  - Add button on recurring events: "Create Gift Registry for [Year]"
-  - Pre-fills creation modal with recurring event details
-  - Creates new one-time registry linked to recurring reminder
-- [ ] **Phase 6**: Manual Testing (6 comprehensive test cases)
-  - Test all event type combinations
-  - Test recurring + registry behavior
-  - Test calendar invitations (when invitations table exists)
-  - Verify dashboard/calendar display logic
-  - Test edge cases (leap year, date boundaries, etc.)
-
-**Critical Files:**
-- Plan: `C:\Users\bntou\.claude\plans\zany-beaming-scott.md`
-- Migration: `supabase_unified_events_migration.sql` ✅
-- Timestamp Fix: `supabase_fix_timestamp_mismatch.sql` ✅
-- Backup: `supabase_unified_migration_backup.sql` ✅
-- Rollback: `supabase_unified_migration_rollback.sql` ✅
-
-**Next Action (Tomorrow):**
-1. Start Phase 4: Build unified CreateEventModal component
-2. Add modal to both Dashboard and Calendar pages
-3. Implement registry spawning from recurring events (Phase 5)
+- ✅ Unified Event Creation Modal (used by Dashboard and Calendar)
+- ✅ "Spawn Registry from Recurring Event" feature
 
 ---
 
@@ -237,6 +196,21 @@ git status           # Check uncommitted changes
 
 ---
 
+## 🚀 Future Improvements
+
+### Event Chatbox (Telegram-style)
+Add a real-time chatbox to event slug pages so invited members can:
+- Send messages to other guests
+- Vote on options (e.g., "Which restaurant should we go to?")
+- React to messages with emojis
+- Create polls for group decisions
+Similar to Telegram group chat functionality. Would require:
+- New `event_messages` table with RLS policies
+- Real-time subscriptions via Supabase
+- Message components with reactions/voting UI
+
+---
+
 ## 📚 Additional Documentation
 
 For detailed historical information, see:
@@ -248,7 +222,7 @@ For detailed historical information, see:
 ---
 
 ## 🔄 Last Updated
-**Date:** 2025-12-12
+**Date:** 2025-12-16
 **Status:**
 - ✅ Google Places & Event Types COMPLETE
 - ✅ Edit Location feature COMPLETE
@@ -256,19 +230,12 @@ For detailed historical information, see:
 - ✅ UX Improvements COMPLETE (Amazon auto-fill, delete members, mobile font fixes)
 - ✅ Next.js Security Upgrade COMPLETE (v16.0.8 - Netlify security fix)
 - ✅ Fulfillment System COMPLETE (Implementation done - E2E testing deferred)
-  - ✅ Day 0-4: All implementation phases complete
-  - ⏸️ Day 5: E2E testing deferred (will test with calendar unification)
-- 🎯 **Calendar & Registry Unification IN PROGRESS** (Phases 1-3 done, 4-6 TODO)
-  - ✅ Phases 1-3: Database migration, API routes, frontend components
-  - 📋 Phases 4-6: Unified modal, recurring spawn, testing
-  - Branch: `feature/calendar-unification`
-  - Commit: `2dcd845`
-
-**Next Session (Tomorrow):**
-1. Phase 4: Build unified CreateEventModal component
-2. Phase 5: Implement "Spawn Registry from Recurring" feature
-3. Phase 6: Manual testing (6 test cases)
-4. Merge to main after all tests pass
+- ✅ Calendar & Registry Unification COMPLETE (Phases 1-6)
+- ✅ **Casual Meetup 2-Tab System COMPLETE** (December 16, 2025)
+  - In Person tab: Physical location with Google Places integration
+  - Online tab: Zoom/Google Meet/Teams link support
+  - Database: Added `online_meeting_url` and `online_meeting_type` columns
+  - API: Updated PATCH endpoint with URL validation and type detection
 
 ---
 

@@ -65,6 +65,15 @@ export default function ViewEventPage() {
   // Page tab for special events (Registry vs Location)
   const [pageTab, setPageTab] = useState("registry");
 
+  // Tab for casual meetups (In Person vs Online)
+  const [casualTab, setCasualTab] = useState("in-person");
+
+  // Online meeting editing states
+  const [editingMeetingUrl, setEditingMeetingUrl] = useState(false);
+  const [meetingUrlInput, setMeetingUrlInput] = useState("");
+  const [meetingUrlError, setMeetingUrlError] = useState("");
+  const [savingMeetingUrl, setSavingMeetingUrl] = useState(false);
+
   // Members and invitations states
   const [members, setMembers] = useState([]);
   const [invitations, setInvitations] = useState([]);
@@ -100,7 +109,7 @@ export default function ViewEventPage() {
     const { data: eventData, error: eventError } = await supabase
       .from("events")
       .select(
-        "id, title, slug, description, event_date, event_type, event_category, registry_enabled, location, user_id, invite_code, items(id, title, price_cents, current_amount_cents, product_link, image_url, is_fulfilled, fulfilled_at)"
+        "id, title, slug, description, event_date, event_type, event_category, registry_enabled, location, user_id, invite_code, online_meeting_url, online_meeting_type, items(id, title, price_cents, current_amount_cents, product_link, image_url, is_fulfilled, fulfilled_at)"
       )
       .eq("slug", slug)
       .single();
@@ -262,7 +271,74 @@ export default function ViewEventPage() {
         setLoading(false);
     }
   };
-  // ...
+
+  // Handle updating the online meeting URL via API
+  const handleUpdateMeetingUrl = async () => {
+    if (!event || !event.id) {
+      showToast("Error: Event data is not fully loaded.", "error");
+      return;
+    }
+
+    setSavingMeetingUrl(true);
+    setMeetingUrlError("");
+
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
+        throw new Error('User session not found. Please log in again.');
+      }
+
+      const authToken = session.access_token;
+
+      const response = await fetch(`/api/events/${event.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({
+          online_meeting_url: meetingUrlInput.trim() || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update meeting URL.');
+      }
+
+      const { event: updatedEvent } = await response.json();
+
+      setEvent(prevEvent => ({
+        ...prevEvent,
+        online_meeting_url: updatedEvent.online_meeting_url,
+        online_meeting_type: updatedEvent.online_meeting_type,
+      }));
+
+      setEditingMeetingUrl(false);
+      showToast("Meeting link updated successfully!", "success");
+
+    } catch (error) {
+      console.error('Update Meeting URL Error:', error);
+      setMeetingUrlError(error.message || "Failed to update meeting link.");
+    } finally {
+      setSavingMeetingUrl(false);
+    }
+  };
+
+  // Helper to get meeting type icon and label
+  const getMeetingTypeInfo = (type) => {
+    switch (type) {
+      case 'zoom':
+        return { label: 'Zoom Meeting', color: 'text-blue-600', bgColor: 'bg-blue-50' };
+      case 'google_meet':
+        return { label: 'Google Meet', color: 'text-green-600', bgColor: 'bg-green-50' };
+      case 'teams':
+        return { label: 'Microsoft Teams', color: 'text-purple-600', bgColor: 'bg-purple-50' };
+      default:
+        return { label: 'Video Call', color: 'text-[var(--lavender-600)]', bgColor: 'bg-[var(--lavender-50)]' };
+    }
+  };
 
   // Verify payment session
   const verifyPaymentSession = async (sessionId) => {
@@ -875,6 +951,45 @@ export default function ViewEventPage() {
                   </div>
                 </div>
               )}
+
+              {/* Tab Navigation for Casual Meetups */}
+              {isCasualMeetup && (
+                <div className="mt-6 flex justify-center">
+                  <div className="inline-flex bg-white rounded-xl p-1 shadow-md border border-[var(--mint-100)]">
+                    <button
+                      onClick={() => setCasualTab("in-person")}
+                      className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
+                        casualTab === "in-person"
+                          ? "bg-gradient-to-r from-[var(--mint-300)] to-[var(--mint-400)] text-white shadow-md"
+                          : "text-[var(--charcoal-800)] hover:bg-[var(--mint-100)]"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        In Person
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setCasualTab("online")}
+                      className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
+                        casualTab === "online"
+                          ? "bg-gradient-to-r from-[var(--lavender-400)] to-[var(--lavender-500)] text-white shadow-md"
+                          : "text-[var(--charcoal-800)] hover:bg-[var(--lavender-50)]"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Online
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Two-column layout: Sidebar + Main Content */}
@@ -1063,104 +1178,278 @@ export default function ViewEventPage() {
 
               {/* Right Content */}
               <div className="flex-1">
-                {/* Location Display - for casual meetups */}
-                {isCasualMeetup && event.location && (
-                  <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                    <h3 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {/* In Person Tab Content - for casual meetups */}
+                {isCasualMeetup && casualTab === "in-person" && (
+                  <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-[var(--mint-100)]">
+                    <h3 className="text-2xl font-bold font-display text-[var(--charcoal-900)] mb-6 flex items-center gap-3">
+                      <svg className="w-7 h-7 text-[var(--mint-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      Location
+                      Meeting Location
                     </h3>
 
-                    {/* Photos */}
-                    {event.location.photos && event.location.photos.length > 0 && (
-                      <div className="grid grid-cols-3 gap-2 mb-4">
-                        {event.location.photos.slice(0, 3).map((photo, index) => (
-                          <img
-                            key={index}
-                            src={`/api/places/photo?photo_reference=${encodeURIComponent(photo.photo_reference)}&maxwidth=400`}
-                            alt={`${event.location.name} photo ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg"
-                          />
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Place Info */}
-                    <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6">
-                      <h4 className="text-2xl font-bold text-gray-800 mb-2">{event.location.name}</h4>
-
-                      {/* Rating */}
-                      {event.location.rating && (
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="flex">
-                            {[...Array(5)].map((_, i) => (
-                              <svg
-                                key={i}
-                                className={`w-5 h-5 ${i < Math.floor(event.location.rating) ? 'text-yellow-400' : 'text-gray-900'}`}
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
+                    {event.location ? (
+                      <>
+                        {/* Photos */}
+                        {event.location.photos && event.location.photos.length > 0 && (
+                          <div className="grid grid-cols-3 gap-3 mb-6">
+                            {event.location.photos.slice(0, 3).map((photo, index) => (
+                              <img
+                                key={index}
+                                src={`/api/places/photo?photo_reference=${encodeURIComponent(photo.photo_reference)}&maxwidth=400`}
+                                alt={`${event.location.name} photo ${index + 1}`}
+                                className="w-full h-32 object-cover rounded-xl"
+                              />
                             ))}
                           </div>
-                          <span className="text-sm font-medium text-gray-900">{event.location.rating.toFixed(1)}</span>
-                        </div>
-                      )}
+                        )}
 
-                      {/* Address */}
-                      <div className="flex items-start gap-2 mb-4">
-                        <svg className="w-5 h-5 text-gray-800 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <p className="text-gray-900">{event.location.formatted_address}</p>
-                      </div>
+                        {/* Place Info */}
+                        <div className="bg-gradient-to-br from-[var(--mint-100)] to-[var(--cloud-50)] rounded-xl p-6">
+                          <h4 className="text-2xl font-bold text-[var(--charcoal-900)] mb-3">{event.location.name}</h4>
 
-                      {/* Google Maps Link */}
-                      {/* Location Buttons - Visible only if location data exists */}
-                      {event.location && (
-                        <div className={`mt-6 ${isOwner ? 'flex flex-col sm:flex-row gap-4' : ''}`}>
-                          
-                          {/* Google Maps Link */}
-                          {event.location.geometry && (
-                            <a
-                              // FIX: The URL structure was incorrect. Using the standard maps link.
-                              href={`https://www.google.com/maps/search/?api=1&query=${event.location.geometry.lat},${event.location.geometry.lng}&query_place_id=${event.location.place_id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={`inline-block ${isOwner ? 'flex-1' : 'w-full'} px-4 py-3 bg-gradient-to-r from-green-500 to-blue-600 text-white rounded-lg font-medium hover:from-green-600 hover:to-blue-700 transition text-center`}
-                            >
-                              <div className="flex items-center justify-center gap-2">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                Open in Google Maps
+                          {/* Rating */}
+                          {event.location.rating && (
+                            <div className="flex items-center gap-2 mb-4">
+                              <div className="flex">
+                                {[...Array(5)].map((_, i) => (
+                                  <svg
+                                    key={i}
+                                    className={`w-5 h-5 ${i < Math.floor(event.location.rating) ? 'text-[var(--buttercream-200)]' : 'text-[var(--cloud-100)]'}`}
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                  </svg>
+                                ))}
                               </div>
-                            </a>
+                              <span className="text-sm font-medium text-[var(--charcoal-800)]">{event.location.rating.toFixed(1)}</span>
+                            </div>
                           )}
 
-                          {/* Edit Location Button - Visible only to Owner */}
+                          {/* Address */}
+                          <div className="flex items-start gap-3 mb-6">
+                            <svg className="w-5 h-5 text-[var(--charcoal-800)] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <p className="text-[var(--charcoal-800)]">{event.location.formatted_address}</p>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className={`${isOwner ? 'flex flex-col sm:flex-row gap-4' : ''}`}>
+                            {/* Google Maps Link */}
+                            {event.location.geometry && (
+                              <a
+                                href={`https://www.google.com/maps/search/?api=1&query=${event.location.geometry.lat},${event.location.geometry.lng}&query_place_id=${event.location.place_id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`inline-block ${isOwner ? 'flex-1' : 'w-full'} px-4 py-3 bg-gradient-to-r from-[var(--mint-300)] to-[var(--mint-400)] text-white rounded-lg font-medium hover:from-[var(--mint-400)] hover:to-[var(--lavender-400)] transition text-center`}
+                              >
+                                <div className="flex items-center justify-center gap-2">
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  </svg>
+                                  Open in Google Maps
+                                </div>
+                              </a>
+                            )}
+
+                            {/* Edit Location Button - Owner only */}
+                            {isOwner && (
+                              <button
+                                onClick={handleEditLocation}
+                                className={`inline-block ${!event.location.geometry ? 'w-full' : 'flex-1'} px-4 py-3 border-2 border-[var(--mint-200)] text-[var(--charcoal-800)] rounded-lg font-medium hover:bg-[var(--mint-100)] transition text-center`}
+                              >
+                                <div className="flex items-center justify-center gap-2">
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.232 5.232z" />
+                                  </svg>
+                                  Edit Location
+                                </div>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      /* No location set - show empty state */
+                      <div className="text-center py-12">
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-[var(--mint-100)] to-[var(--cloud-50)] flex items-center justify-center">
+                          <svg className="w-10 h-10 text-[var(--mint-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </div>
+                        <h4 className="text-xl font-semibold text-[var(--charcoal-900)] mb-2">No location set</h4>
+                        <p className="text-[var(--charcoal-800)] mb-6 max-w-md mx-auto">
+                          {isOwner
+                            ? "Add a meeting place so your friends know where to go."
+                            : "The host hasn't added a location yet."}
+                        </p>
+                        {isOwner && (
+                          <button
+                            onClick={handleEditLocation}
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[var(--mint-300)] to-[var(--mint-400)] text-white rounded-xl font-semibold hover:from-[var(--mint-400)] hover:to-[var(--lavender-400)] transition shadow-lg"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Location
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Online Tab Content - for casual meetups */}
+                {isCasualMeetup && casualTab === "online" && (
+                  <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-[var(--lavender-100)]">
+                    <h3 className="text-2xl font-bold font-display text-[var(--charcoal-900)] mb-6 flex items-center gap-3">
+                      <svg className="w-7 h-7 text-[var(--lavender-500)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      Online Meeting
+                    </h3>
+
+                    {event.online_meeting_url && !editingMeetingUrl ? (
+                      /* Meeting link exists - display it */
+                      <div className="bg-gradient-to-br from-[var(--lavender-50)] to-[var(--cloud-50)] rounded-xl p-6">
+                        {/* Meeting Type Badge */}
+                        <div className="mb-4">
+                          {(() => {
+                            const info = getMeetingTypeInfo(event.online_meeting_type);
+                            return (
+                              <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${info.bgColor} ${info.color}`}>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                                {info.label}
+                              </span>
+                            );
+                          })()}
+                        </div>
+
+                        {/* Meeting URL Display */}
+                        <div className="flex items-center gap-3 mb-6 p-3 bg-white rounded-lg border border-[var(--lavender-100)]">
+                          <svg className="w-5 h-5 text-[var(--lavender-500)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                          </svg>
+                          <p className="text-[var(--charcoal-800)] text-sm truncate flex-1 font-mono">{event.online_meeting_url}</p>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className={`${isOwner ? 'flex flex-col sm:flex-row gap-4' : ''}`}>
+                          {/* Join Meeting Button */}
+                          <a
+                            href={event.online_meeting_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`inline-block ${isOwner ? 'flex-1' : 'w-full'} px-4 py-3 bg-gradient-to-r from-[var(--lavender-400)] to-[var(--lavender-500)] text-white rounded-lg font-medium hover:from-[var(--lavender-500)] hover:to-[var(--lavender-600)] transition text-center`}
+                          >
+                            <div className="flex items-center justify-center gap-2">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                              Join Meeting
+                            </div>
+                          </a>
+
+                          {/* Edit Meeting Link Button - Owner only */}
                           {isOwner && (
                             <button
-                              onClick={handleEditLocation} // Use the new function name
-                              className={`inline-block ${!event.location.geometry ? 'w-full' : 'flex-1'} px-4 py-3 border-2 border-gray-400 text-gray-800 rounded-lg font-medium hover:bg-gray-100 transition text-center`}
+                              onClick={() => {
+                                setMeetingUrlInput(event.online_meeting_url || "");
+                                setEditingMeetingUrl(true);
+                              }}
+                              className="flex-1 px-4 py-3 border-2 border-[var(--lavender-200)] text-[var(--charcoal-800)] rounded-lg font-medium hover:bg-[var(--lavender-50)] transition text-center"
                             >
                               <div className="flex items-center justify-center gap-2">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.232 5.232z" />
                                 </svg>
-                                Edit Location
+                                Edit Link
                               </div>
                             </button>
                           )}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    ) : editingMeetingUrl && isOwner ? (
+                      /* Editing mode - show input form */
+                      <div className="bg-gradient-to-br from-[var(--lavender-50)] to-[var(--cloud-50)] rounded-xl p-6">
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-[var(--charcoal-900)] mb-2">
+                            Meeting Link
+                          </label>
+                          <input
+                            type="url"
+                            value={meetingUrlInput}
+                            onChange={(e) => setMeetingUrlInput(e.target.value)}
+                            placeholder="https://zoom.us/j/... or https://meet.google.com/..."
+                            className="w-full px-4 py-3 border-2 border-[var(--lavender-200)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--lavender-400)] focus:border-transparent text-[var(--charcoal-900)]"
+                          />
+                          <p className="text-sm text-[var(--charcoal-800)] mt-2">
+                            Paste a Zoom, Google Meet, or Microsoft Teams link
+                          </p>
+                          {meetingUrlError && (
+                            <p className="text-sm text-red-600 mt-2">{meetingUrlError}</p>
+                          )}
+                        </div>
+
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => {
+                              setEditingMeetingUrl(false);
+                              setMeetingUrlInput("");
+                              setMeetingUrlError("");
+                            }}
+                            className="flex-1 px-4 py-3 border-2 border-[var(--lavender-200)] text-[var(--charcoal-800)] rounded-lg font-medium hover:bg-[var(--lavender-50)] transition"
+                            disabled={savingMeetingUrl}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleUpdateMeetingUrl}
+                            className="flex-1 px-4 py-3 bg-gradient-to-r from-[var(--lavender-400)] to-[var(--lavender-500)] text-white rounded-lg font-medium hover:from-[var(--lavender-500)] hover:to-[var(--lavender-600)] transition disabled:opacity-50"
+                            disabled={savingMeetingUrl}
+                          >
+                            {savingMeetingUrl ? "Saving..." : "Save Link"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* No meeting link set - show empty state */
+                      <div className="text-center py-12">
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-[var(--lavender-100)] to-[var(--cloud-50)] flex items-center justify-center">
+                          <svg className="w-10 h-10 text-[var(--lavender-500)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <h4 className="text-xl font-semibold text-[var(--charcoal-900)] mb-2">No meeting link set</h4>
+                        <p className="text-[var(--charcoal-800)] mb-6 max-w-md mx-auto">
+                          {isOwner
+                            ? "Add a Zoom, Google Meet, or Teams link for virtual attendees."
+                            : "The host hasn't added a video meeting link yet."}
+                        </p>
+                        {isOwner && (
+                          <button
+                            onClick={() => {
+                              setMeetingUrlInput("");
+                              setEditingMeetingUrl(true);
+                            }}
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[var(--lavender-400)] to-[var(--lavender-500)] text-white rounded-xl font-semibold hover:from-[var(--lavender-500)] hover:to-[var(--lavender-600)] transition shadow-lg"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Meeting Link
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
