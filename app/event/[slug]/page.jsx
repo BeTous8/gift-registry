@@ -108,18 +108,25 @@ export default function ViewEventPage() {
 
     const { data: eventData, error: eventError } = await supabase
       .from("events")
-      .select(
-        "id, title, slug, description, event_date, event_type, event_category, registry_enabled, location, user_id, invite_code, online_meeting_url, online_meeting_type, items(id, title, price_cents, current_amount_cents, product_link, image_url, is_fulfilled, fulfilled_at)"
-      )
+      .select("*, items(id, title, price_cents, current_amount_cents, product_link, image_url, is_fulfilled, fulfilled_at)")
       .eq("slug", slug)
       .single();
 
+    console.log('Supabase query result:', { eventData, eventError });
+
     if (eventError || !eventData) {
+      console.log('Event not found or error:', eventError);
       setNotFound(true);
       setLoading(false);
       return;
     }
 
+    console.log('Event data fetched:', {
+      online_meeting_url: eventData.online_meeting_url,
+      online_meeting_type: eventData.online_meeting_type,
+      event_category: eventData.event_category,
+      registry_enabled: eventData.registry_enabled
+    });
     setEvent(eventData);
     setItems(eventData.items || []);
 
@@ -471,53 +478,10 @@ export default function ViewEventPage() {
   }, [slug, router, showToast, paymentVerified]);
 
   useEffect(() => {
-    let ignore = false;
+    fetchEventData();
 
-    async function fetchData() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (ignore) return;
-      if (session?.user) {
-        setUser(session.user);
-      } else {
-        setUser(null);
-        setIsOwner(false);
-      }
-
-      const { data: eventData, error: eventError } = await supabase
-        .from("events")
-        .select(
-          "id, title, slug, description, event_date, event_type, event_category, registry_enabled, location, user_id, invite_code, items(id, title, price_cents, current_amount_cents, product_link, image_url, is_fulfilled, fulfilled_at)"
-        )
-        .eq("slug", slug)
-        .single();
-
-      if (eventError || !eventData) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-
-      setEvent(eventData);
-      setItems(eventData.items || []);
-
-      const userIsOwner = session?.user && eventData.user_id === session.user.id;
-      setIsOwner(userIsOwner);
-
-      // Fetch members and invitations
-      if (session?.user) {
-        fetchMembersAndInvitations(eventData.id, session.user.id);
-      }
-
-      setLoading(false);
-    }
-
-    fetchData();
-
-    // Listen for sign-out in other tabs (exact same as edit page - minimal, no state updates except on signout)
+    // Listen for sign-out in other tabs
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (authEvent, session) => {
-      if (ignore) return;
       if (authEvent === "SIGNED_OUT") {
         setUser(null);
         setIsOwner(false);
@@ -525,9 +489,9 @@ export default function ViewEventPage() {
     });
 
     return () => {
-      ignore = true;
       subscription.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
   let totalGoal = 0;
