@@ -10,6 +10,8 @@ import LocationSearchModal from "../../components/LocationSearchModal";
 import InviteFromContactsModal from "../../components/InviteFromContactsModal";
 import AddItemModal from "../../components/AddItemModal";
 import RedemptionModal from "../../components/RedemptionModal";
+import AddToCalendarButton from "../../components/AddToCalendarButton";
+import EventRemindersPanel from "../../components/EventRemindersPanel";
 import { parseLocalDate } from "../../lib/dateUtils";
 
 export default function ViewEventPage() {
@@ -844,30 +846,44 @@ export default function ViewEventPage() {
                   )}
                 </div>
 
-                {/* Right: Share button */}
-                {user && (
-                  <button
-                    onClick={handleShare}
-                    className={`inline-flex items-center gap-2 bg-white px-4 py-2 rounded-lg font-semibold shadow-md transition self-start ${
-                      isCasualMeetup
-                        ? 'text-[var(--mint-400)] hover:bg-[var(--mint-100)] border border-[var(--mint-200)]'
-                        : 'text-[var(--lavender-600)] hover:bg-[var(--lavender-50)] border border-[var(--lavender-200)]'
-                    }`}
-                    title="Copy link to share"
-                  >
-                    {copied ? (
-                      <>
-                        <span>✓</span>
-                        <span>Link Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>🔗</span>
-                        <span>Share Event</span>
-                      </>
-                    )}
-                  </button>
-                )}
+                {/* Right: Action buttons */}
+                <div className="flex flex-col sm:flex-row gap-2 self-start">
+                  {/* Add to Calendar button */}
+                  {event.event_date && (
+                    <AddToCalendarButton
+                      eventId={event.id}
+                      eventTitle={event.title}
+                      eventDate={event.event_date}
+                      eventDescription={event.description}
+                      eventLocation={event.location}
+                    />
+                  )}
+
+                  {/* Share button */}
+                  {user && (
+                    <button
+                      onClick={handleShare}
+                      className={`inline-flex items-center gap-2 bg-white px-4 py-2 rounded-lg font-semibold shadow-md transition ${
+                        isCasualMeetup
+                          ? 'text-[var(--mint-400)] hover:bg-[var(--mint-100)] border border-[var(--mint-200)]'
+                          : 'text-[var(--lavender-600)] hover:bg-[var(--lavender-50)] border border-[var(--lavender-200)]'
+                      }`}
+                      title="Copy link to share"
+                    >
+                      {copied ? (
+                        <>
+                          <span>✓</span>
+                          <span>Link Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>🔗</span>
+                          <span>Share Event</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Description below the header */}
@@ -1138,6 +1154,17 @@ export default function ViewEventPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Event Reminders Panel (Owner only) */}
+                {isOwner && event && (
+                  <div className="mt-4">
+                    <EventRemindersPanel
+                      eventId={event.id}
+                      eventDate={event.event_date}
+                      isOwner={isOwner}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Right Content */}

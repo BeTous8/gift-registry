@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[functions]
+  directory = "netlify/functions"
+
+# Scheduled function: Send event reminders every hour
+[functions."send-reminders"]
+  schedule = "0 * * * *"

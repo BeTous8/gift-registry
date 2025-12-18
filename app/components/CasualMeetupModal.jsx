@@ -10,9 +10,9 @@ import supabase from "../lib/supabase";
  * Includes: Title, Date, Location, and Quick Invite flow
  * No gift registry - just calendar events
  */
-export default function CasualMeetupModal({ onClose, onSuccess }) {
+export default function CasualMeetupModal({ onClose, onSuccess, prefillData = {} }) {
   const [title, setTitle] = useState("");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(prefillData.event_date || "");
   const [location, setLocation] = useState(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [addToCalendar, setAddToCalendar] = useState(true);
