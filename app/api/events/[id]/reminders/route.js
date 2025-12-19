@@ -77,7 +77,7 @@ function calculateScheduledFor(eventDate, eventTime, reminderAmount, reminderUni
 
   // Adjust: if the event is at "3pm LA time", we need to add the offset to get UTC
   // LA is UTC-8, so 3pm LA = 11pm UTC (add 8 hours)
-  const eventTimestamp = new Date(utcDate.getTime() - offsetMinutes * 60 * 1000);
+  const eventTimestamp = new Date(utcDate.getTime() + offsetMinutes * 60 * 1000);
 
   // Subtract reminder interval
   const intervalMs = reminderAmount * MS_PER_UNIT[reminderUnit];
