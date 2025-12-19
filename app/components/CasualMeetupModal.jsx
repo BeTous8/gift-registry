@@ -67,6 +67,9 @@ export default function CasualMeetupModal({ onClose, onSuccess, prefillData = {}
       const slug = generateSlug(title);
       const inviteCode = generateInviteCode();
 
+      // Capture user's timezone for accurate reminder calculations
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
       // Insert casual event
       const { data, error: insertError } = await supabase
         .from("events")
@@ -82,7 +85,8 @@ export default function CasualMeetupModal({ onClose, onSuccess, prefillData = {}
           location: location || null,
           is_recurring: false,
           registry_enabled: false,
-          is_private: false
+          is_private: false,
+          timezone: userTimezone
         })
         .select()
         .single();

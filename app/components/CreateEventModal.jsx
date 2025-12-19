@@ -132,6 +132,9 @@ export default function CreateEventModal({
         const inviteCode = registryEnabled ? generateInviteCode() : null;
 
         // Insert event into database
+        // Capture user's timezone for accurate reminder calculations
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
         const { data, error: insertError } = await supabase
           .from("events")
           .insert({
@@ -146,7 +149,8 @@ export default function CreateEventModal({
             location: location || null,
             is_recurring: addToCalendar ? isRecurring : false,
             registry_enabled: registryEnabled,
-            is_private: false // Default to public
+            is_private: false, // Default to public
+            timezone: userTimezone
           })
           .select()
           .single();

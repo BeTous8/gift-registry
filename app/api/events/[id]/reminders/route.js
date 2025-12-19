@@ -39,20 +39,45 @@ function legacyTypeToAmountUnit(reminderType) {
 }
 
 /**
- * Calculate scheduled_for timestamp (timezone-aware via JavaScript Date)
+ * Get the timezone offset in minutes for a given timezone at a specific date
+ * @param {Date} date - The date to check
+ * @param {string} timezone - IANA timezone string (e.g., 'America/Los_Angeles')
+ * @returns {number} Offset in minutes (positive = behind UTC, negative = ahead)
+ */
+function getTimezoneOffset(date, timezone) {
+  // Get the date formatted in UTC
+  const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+  // Get the date formatted in the target timezone
+  const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
+  // Return the difference in minutes
+  return (utcDate - tzDate) / (60 * 1000);
+}
+
+/**
+ * Calculate scheduled_for timestamp (timezone-aware)
  * @param {string} eventDate - YYYY-MM-DD format
  * @param {string|null} eventTime - HH:MM:SS format or null
  * @param {number} reminderAmount - Number of units before event
  * @param {string} reminderUnit - 'minutes', 'hours', 'days', or 'weeks'
- * @returns {Date} The scheduled reminder time
+ * @param {string} timezone - IANA timezone string (e.g., 'America/Los_Angeles')
+ * @returns {Date} The scheduled reminder time in UTC
  */
-function calculateScheduledFor(eventDate, eventTime, reminderAmount, reminderUnit) {
-  // Combine date and time (default to 9am if no time set)
-  const dateTimeStr = eventTime
-    ? `${eventDate}T${eventTime}`
-    : `${eventDate}T09:00:00`;
+function calculateScheduledFor(eventDate, eventTime, reminderAmount, reminderUnit, timezone = 'America/Los_Angeles') {
+  // Parse date and time components
+  const [year, month, day] = eventDate.split('-').map(Number);
+  const timeStr = eventTime || '09:00:00';
+  const [hours, minutes, seconds = 0] = timeStr.split(':').map(Number);
 
-  const eventTimestamp = new Date(dateTimeStr);
+  // Create a date in UTC with the event's date/time values
+  const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds));
+
+  // Get the timezone offset for this date in the event's timezone
+  // This handles DST correctly by checking at the specific date
+  const offsetMinutes = getTimezoneOffset(utcDate, timezone);
+
+  // Adjust: if the event is at "3pm LA time", we need to add the offset to get UTC
+  // LA is UTC-8, so 3pm LA = 11pm UTC (add 8 hours)
+  const eventTimestamp = new Date(utcDate.getTime() - offsetMinutes * 60 * 1000);
 
   // Subtract reminder interval
   const intervalMs = reminderAmount * MS_PER_UNIT[reminderUnit];
@@ -171,10 +196,10 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
 
-    // Verify user owns the event and get event date/time
+    // Verify user owns the event and get event date/time/timezone
     const { data: event, error: eventError } = await supabaseAdmin
       .from('events')
-      .select('id, user_id, event_date, event_time')
+      .select('id, user_id, event_date, event_time, timezone')
       .eq('id', eventId)
       .single();
 
@@ -221,7 +246,8 @@ export async function POST(request, { params }) {
       event.event_date,
       event.event_time,
       finalAmount,
-      finalUnit
+      finalUnit,
+      event.timezone || 'America/Los_Angeles' // Fallback for existing events without timezone
     );
 
     // Validate reminder is not in the past
