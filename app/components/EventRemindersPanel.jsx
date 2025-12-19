@@ -18,20 +18,17 @@ export default function EventRemindersPanel({ eventId, eventDate, isOwner }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // New reminder form state
-  const [selectedType, setSelectedType] = useState("");
+  // New reminder form state - flexible amount + unit
+  const [reminderAmount, setReminderAmount] = useState("");
+  const [reminderUnit, setReminderUnit] = useState("hours");
   const [sendToMembers, setSendToMembers] = useState(true);
 
-  // Reminder type options
-  const reminderOptions = [
-    { value: '1_hour', label: '1 hour before' },
-    { value: '2_hours', label: '2 hours before' },
-    { value: '1_day', label: '1 day before' },
-    { value: '2_days', label: '2 days before' },
-    { value: '3_days', label: '3 days before' },
-    { value: '1_week', label: '1 week before' },
-    { value: '2_weeks', label: '2 weeks before' },
-    { value: '1_month', label: '1 month before' },
+  // Unit options for dropdown
+  const unitOptions = [
+    { value: 'minutes', label: 'minutes' },
+    { value: 'hours', label: 'hours' },
+    { value: 'days', label: 'days' },
+    { value: 'weeks', label: 'weeks' },
   ];
 
   // Fetch reminders on mount
@@ -77,7 +74,8 @@ export default function EventRemindersPanel({ eventId, eventDate, isOwner }) {
 
   async function handleAddReminder(e) {
     e.preventDefault();
-    if (!selectedType) return;
+    const amount = parseInt(reminderAmount, 10);
+    if (!amount || amount < 1 || !reminderUnit) return;
 
     setSaving(true);
     setError("");
@@ -97,7 +95,8 @@ export default function EventRemindersPanel({ eventId, eventDate, isOwner }) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          reminder_type: selectedType,
+          reminder_amount: amount,
+          reminder_unit: reminderUnit,
           send_to_members: sendToMembers
         })
       });
@@ -105,7 +104,8 @@ export default function EventRemindersPanel({ eventId, eventDate, isOwner }) {
       if (response.ok) {
         const data = await response.json();
         setReminders([...reminders, data.reminder]);
-        setSelectedType("");
+        setReminderAmount("");
+        setReminderUnit("hours");
         setSendToMembers(true);
       } else {
         const errorData = await response.json();
@@ -145,10 +145,30 @@ export default function EventRemindersPanel({ eventId, eventDate, isOwner }) {
     }
   }
 
-  // Get label for reminder type
-  function getReminderLabel(type) {
-    const option = reminderOptions.find(o => o.value === type);
-    return option ? option.label : type;
+  // Get label for reminder - supports both old type format and new amount/unit format
+  function getReminderLabel(reminder) {
+    // New flexible format
+    if (reminder.reminder_amount && reminder.reminder_unit) {
+      const unit = reminder.reminder_amount === 1
+        ? reminder.reminder_unit.replace(/s$/, '') // Remove trailing 's' for singular
+        : reminder.reminder_unit;
+      return `${reminder.reminder_amount} ${unit} before`;
+    }
+    // Legacy format fallback
+    if (reminder.reminder_type) {
+      const legacyLabels = {
+        '1_hour': '1 hour before',
+        '2_hours': '2 hours before',
+        '1_day': '1 day before',
+        '2_days': '2 days before',
+        '3_days': '3 days before',
+        '1_week': '1 week before',
+        '2_weeks': '2 weeks before',
+        '1_month': '1 month before',
+      };
+      return legacyLabels[reminder.reminder_type] || reminder.reminder_type;
+    }
+    return 'Reminder';
   }
 
   // Format scheduled time
@@ -162,11 +182,6 @@ export default function EventRemindersPanel({ eventId, eventDate, isOwner }) {
       minute: '2-digit'
     });
   }
-
-  // Filter out reminder types already used
-  const availableOptions = reminderOptions.filter(
-    opt => !reminders.some(r => r.reminder_type === opt.value)
-  );
 
   // Don't render if not owner
   if (!isOwner) return null;
@@ -220,7 +235,7 @@ export default function EventRemindersPanel({ eventId, eventDate, isOwner }) {
                 >
                   <div>
                     <p className="font-medium text-[var(--charcoal-900)] text-sm">
-                      {getReminderLabel(reminder.reminder_type)}
+                      {getReminderLabel(reminder)}
                     </p>
                     <p className="text-xs text-[var(--charcoal-800)]">
                       {reminder.is_sent ? (
@@ -253,18 +268,31 @@ export default function EventRemindersPanel({ eventId, eventDate, isOwner }) {
           {reminders.length < 2 && (
             <form onSubmit={handleAddReminder} className="space-y-3">
               <div>
-                <select
-                  value={selectedType}
-                  onChange={(e) => setSelectedType(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-[var(--lavender-200)] rounded-lg focus:ring-2 focus:ring-[var(--lavender-400)] focus:border-transparent bg-white"
-                >
-                  <option value="">Select reminder time...</option>
-                  {availableOptions.map(opt => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+                <label className="block text-xs text-[var(--charcoal-800)] mb-1">
+                  Remind me...
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max="99"
+                    placeholder="30"
+                    value={reminderAmount}
+                    onChange={(e) => setReminderAmount(e.target.value)}
+                    className="w-20 px-3 py-2 text-sm border border-[var(--lavender-200)] rounded-lg focus:ring-2 focus:ring-[var(--lavender-400)] focus:border-transparent bg-white text-center"
+                  />
+                  <select
+                    value={reminderUnit}
+                    onChange={(e) => setReminderUnit(e.target.value)}
+                    className="flex-1 px-3 py-2 text-sm border border-[var(--lavender-200)] rounded-lg focus:ring-2 focus:ring-[var(--lavender-400)] focus:border-transparent bg-white"
+                  >
+                    {unitOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label} before
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <label className="flex items-center gap-2 text-sm">
@@ -279,7 +307,7 @@ export default function EventRemindersPanel({ eventId, eventDate, isOwner }) {
 
               <button
                 type="submit"
-                disabled={!selectedType || saving}
+                disabled={!reminderAmount || parseInt(reminderAmount, 10) < 1 || saving}
                 className="w-full px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-[var(--lavender-400)] to-[var(--lavender-600)] rounded-lg hover:from-[var(--lavender-500)] hover:to-[var(--lavender-700)] disabled:opacity-50 disabled:cursor-not-allowed transition"
               >
                 {saving ? 'Adding...' : 'Add Reminder'}

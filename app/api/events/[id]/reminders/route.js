@@ -7,31 +7,56 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Valid reminder types
+// Valid reminder units
+const VALID_REMINDER_UNITS = ['minutes', 'hours', 'days', 'weeks'];
+
+// Legacy reminder types (for backwards compatibility)
 const VALID_REMINDER_TYPES = [
   '1_hour', '2_hours', '1_day', '2_days', '3_days', '1_week', '2_weeks', '1_month'
 ];
 
-// Calculate scheduled_for timestamp based on event date and reminder type
-function calculateScheduledFor(eventDate, reminderType) {
-  if (!eventDate) return null;
+// Milliseconds per unit
+const MS_PER_UNIT = {
+  minutes: 60 * 1000,
+  hours: 60 * 60 * 1000,
+  days: 24 * 60 * 60 * 1000,
+  weeks: 7 * 24 * 60 * 60 * 1000
+};
 
-  // Parse event date and set to 9am (default event time)
-  const eventTimestamp = new Date(eventDate + 'T09:00:00');
-
-  const intervals = {
-    '1_hour': 1 * 60 * 60 * 1000,
-    '2_hours': 2 * 60 * 60 * 1000,
-    '1_day': 24 * 60 * 60 * 1000,
-    '2_days': 2 * 24 * 60 * 60 * 1000,
-    '3_days': 3 * 24 * 60 * 60 * 1000,
-    '1_week': 7 * 24 * 60 * 60 * 1000,
-    '2_weeks': 14 * 24 * 60 * 60 * 1000,
-    '1_month': 30 * 24 * 60 * 60 * 1000,
+// Convert legacy reminder_type to amount and unit
+function legacyTypeToAmountUnit(reminderType) {
+  const mapping = {
+    '1_hour': { amount: 1, unit: 'hours' },
+    '2_hours': { amount: 2, unit: 'hours' },
+    '1_day': { amount: 1, unit: 'days' },
+    '2_days': { amount: 2, unit: 'days' },
+    '3_days': { amount: 3, unit: 'days' },
+    '1_week': { amount: 1, unit: 'weeks' },
+    '2_weeks': { amount: 2, unit: 'weeks' },
+    '1_month': { amount: 30, unit: 'days' } // Approximate 1 month as 30 days
   };
+  return mapping[reminderType] || { amount: 1, unit: 'days' };
+}
 
-  const interval = intervals[reminderType] || 0;
-  return new Date(eventTimestamp.getTime() - interval).toISOString();
+/**
+ * Calculate scheduled_for timestamp (timezone-aware via JavaScript Date)
+ * @param {string} eventDate - YYYY-MM-DD format
+ * @param {string|null} eventTime - HH:MM:SS format or null
+ * @param {number} reminderAmount - Number of units before event
+ * @param {string} reminderUnit - 'minutes', 'hours', 'days', or 'weeks'
+ * @returns {Date} The scheduled reminder time
+ */
+function calculateScheduledFor(eventDate, eventTime, reminderAmount, reminderUnit) {
+  // Combine date and time (default to 9am if no time set)
+  const dateTimeStr = eventTime
+    ? `${eventDate}T${eventTime}`
+    : `${eventDate}T09:00:00`;
+
+  const eventTimestamp = new Date(dateTimeStr);
+
+  // Subtract reminder interval
+  const intervalMs = reminderAmount * MS_PER_UNIT[reminderUnit];
+  return new Date(eventTimestamp.getTime() - intervalMs);
 }
 
 /**
@@ -92,18 +117,45 @@ export async function GET(request, { params }) {
 /**
  * POST /api/events/[id]/reminders
  * Create a new reminder (max 2 per event)
+ * Accepts either:
+ *   - reminder_amount (integer) + reminder_unit ('minutes'|'hours'|'days'|'weeks')
+ *   - reminder_type (legacy format like '1_hour', '1_day', etc.)
  */
 export async function POST(request, { params }) {
   const { id: eventId } = await params;
 
   try {
-    const { reminder_type, send_to_members = true } = await request.json();
+    const { reminder_amount, reminder_unit, reminder_type, send_to_members = true } = await request.json();
 
-    // Validate reminder_type
-    if (!reminder_type || !VALID_REMINDER_TYPES.includes(reminder_type)) {
+    // Validate - either new format (amount + unit) or legacy format (type)
+    const usingNewFormat = reminder_amount !== undefined && reminder_unit !== undefined;
+    const usingLegacyFormat = reminder_type !== undefined;
+
+    if (!usingNewFormat && !usingLegacyFormat) {
       return NextResponse.json({
-        error: `Invalid reminder_type. Must be one of: ${VALID_REMINDER_TYPES.join(', ')}`
+        error: 'Either reminder_amount+reminder_unit or reminder_type is required'
       }, { status: 400 });
+    }
+
+    if (usingNewFormat) {
+      // Validate new format
+      if (!Number.isInteger(reminder_amount) || reminder_amount < 1) {
+        return NextResponse.json({
+          error: 'reminder_amount must be a positive integer'
+        }, { status: 400 });
+      }
+      if (!VALID_REMINDER_UNITS.includes(reminder_unit)) {
+        return NextResponse.json({
+          error: `Invalid reminder_unit. Must be one of: ${VALID_REMINDER_UNITS.join(', ')}`
+        }, { status: 400 });
+      }
+    } else {
+      // Validate legacy format
+      if (!VALID_REMINDER_TYPES.includes(reminder_type)) {
+        return NextResponse.json({
+          error: `Invalid reminder_type. Must be one of: ${VALID_REMINDER_TYPES.join(', ')}`
+        }, { status: 400 });
+      }
     }
 
     // Extract JWT from headers
@@ -119,10 +171,10 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
 
-    // Verify user owns the event and get event date
+    // Verify user owns the event and get event date/time
     const { data: event, error: eventError } = await supabaseAdmin
       .from('events')
-      .select('id, user_id, event_date')
+      .select('id, user_id, event_date, event_time')
       .eq('id', eventId)
       .single();
 
@@ -138,7 +190,7 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Cannot set reminder for event without a date' }, { status: 400 });
     }
 
-    // Check existing reminder count
+    // Check existing reminder count (also enforced by DB trigger)
     const { count, error: countError } = await supabaseAdmin
       .from('event_reminders')
       .select('id', { count: 'exact', head: true })
@@ -153,26 +205,51 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Maximum 2 reminders per event allowed' }, { status: 400 });
     }
 
-    // Calculate scheduled_for timestamp
-    const scheduled_for = calculateScheduledFor(event.event_date, reminder_type);
+    // Determine reminder amount and unit (convert legacy format if needed)
+    let finalAmount, finalUnit;
+    if (usingNewFormat) {
+      finalAmount = reminder_amount;
+      finalUnit = reminder_unit;
+    } else {
+      const converted = legacyTypeToAmountUnit(reminder_type);
+      finalAmount = converted.amount;
+      finalUnit = converted.unit;
+    }
 
-    // Check if reminder would be in the past
-    if (new Date(scheduled_for) < new Date()) {
+    // Calculate scheduled_for in JavaScript (timezone-aware)
+    const scheduledFor = calculateScheduledFor(
+      event.event_date,
+      event.event_time,
+      finalAmount,
+      finalUnit
+    );
+
+    // Validate reminder is not in the past
+    if (scheduledFor < new Date()) {
       return NextResponse.json({
         error: 'Cannot set reminder for a time that has already passed'
       }, { status: 400 });
     }
 
+    // Build the reminder data
+    const reminderData = {
+      event_id: eventId,
+      send_to_members: Boolean(send_to_members),
+      scheduled_for: scheduledFor.toISOString(),
+      is_sent: false
+    };
+
+    if (usingNewFormat) {
+      reminderData.reminder_amount = reminder_amount;
+      reminderData.reminder_unit = reminder_unit;
+    } else {
+      reminderData.reminder_type = reminder_type;
+    }
+
     // Create the reminder
     const { data: reminder, error: insertError } = await supabaseAdmin
       .from('event_reminders')
-      .insert({
-        event_id: eventId,
-        reminder_type,
-        send_to_members: Boolean(send_to_members),
-        scheduled_for,
-        is_sent: false
-      })
+      .insert(reminderData)
       .select()
       .single();
 
@@ -181,6 +258,17 @@ export async function POST(request, { params }) {
       if (insertError.code === '23505') {
         return NextResponse.json({
           error: 'A reminder with this timing already exists for this event'
+        }, { status: 400 });
+      }
+      // Check for trigger-raised exceptions (past reminder, no event date)
+      if (insertError.message?.includes('already passed')) {
+        return NextResponse.json({
+          error: 'Cannot set reminder for a time that has already passed'
+        }, { status: 400 });
+      }
+      if (insertError.message?.includes('without a date')) {
+        return NextResponse.json({
+          error: 'Cannot set reminder for event without a date'
         }, { status: 400 });
       }
       console.error('Error creating reminder:', insertError);

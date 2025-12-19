@@ -31,6 +31,7 @@ export async function PATCH(request, { params }) {
       title,
       description,
       event_date,
+      event_time,
       event_type,
       location,
       theme,
@@ -64,6 +65,7 @@ export async function PATCH(request, { params }) {
       updatePayload.description = description ? description.trim() : null;
     }
     if (event_date !== undefined) updatePayload.event_date = event_date || null;
+    if (event_time !== undefined) updatePayload.event_time = event_time || null;
     if (location !== undefined) updatePayload.location = location;
     if (theme !== undefined) updatePayload.theme = theme;
     if (is_recurring !== undefined) updatePayload.is_recurring = is_recurring;

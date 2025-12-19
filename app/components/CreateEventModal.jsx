@@ -26,6 +26,7 @@ export default function CreateEventModal({
 }) {
   const [title, setTitle] = useState(prefillData.title || "");
   const [date, setDate] = useState(prefillData.event_date || "");
+  const [time, setTime] = useState(prefillData.event_time || "");
   const [description, setDescription] = useState(prefillData.description || "");
   // Event type is now selected on Home page before opening modal - always "gift-registry" for this modal
   const eventType = "gift-registry";
@@ -104,6 +105,7 @@ export default function CreateEventModal({
             title: title.trim(),
             description: description.trim() || null,
             event_date: date || null,
+            event_time: time || null,
             event_type: eventType,
             event_category: eventCategory,
             location: location || null,
@@ -138,6 +140,7 @@ export default function CreateEventModal({
             slug: slug,
             description: description.trim() || null,
             event_date: date || null,
+            event_time: time || null,
             event_category: eventCategory,
             invite_code: inviteCode,
             location: location || null,
@@ -216,18 +219,34 @@ export default function CreateEventModal({
               />
             </div>
 
-            {/* Event Date */}
-            <div>
-              <label className="block text-sm font-medium mb-1 text-[var(--charcoal-900)]" htmlFor="date">
-                Event Date
-              </label>
-              <input
-                id="date"
-                type="date"
-                className="w-full px-4 py-2 border-2 border-[var(--lavender-200)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--lavender-400)] focus:border-transparent text-[var(--charcoal-900)]"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
+            {/* Event Date & Time */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1 text-[var(--charcoal-900)]" htmlFor="date">
+                  Event Date
+                </label>
+                <input
+                  id="date"
+                  type="date"
+                  className="w-full px-4 py-2 border-2 border-[var(--lavender-200)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--lavender-400)] focus:border-transparent text-[var(--charcoal-900)]"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 text-[var(--charcoal-900)]" htmlFor="time">
+                  Event Time
+                </label>
+                <input
+                  id="time"
+                  type="time"
+                  className="w-full px-4 py-2 border-2 border-[var(--lavender-200)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--lavender-400)] focus:border-transparent text-[var(--charcoal-900)]"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  placeholder="Optional"
+                />
+                <p className="text-xs text-[var(--charcoal-700)] mt-1">Optional - used for reminders</p>
+              </div>
             </div>
 
             {/* Description */}

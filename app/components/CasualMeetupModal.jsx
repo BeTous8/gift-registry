@@ -13,6 +13,7 @@ import supabase from "../lib/supabase";
 export default function CasualMeetupModal({ onClose, onSuccess, prefillData = {} }) {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(prefillData.event_date || "");
+  const [time, setTime] = useState(prefillData.event_time || "");
   const [location, setLocation] = useState(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [addToCalendar, setAddToCalendar] = useState(true);
@@ -75,6 +76,7 @@ export default function CasualMeetupModal({ onClose, onSuccess, prefillData = {}
           slug: slug,
           description: null,
           event_date: date || null,
+          event_time: time || null,
           event_category: "casual",
           invite_code: inviteCode,
           location: location || null,
@@ -188,19 +190,33 @@ export default function CasualMeetupModal({ onClose, onSuccess, prefillData = {}
               />
             </div>
 
-            {/* Event Date */}
-            <div>
-              <label className="block text-sm font-medium mb-1 text-[var(--charcoal-900)]" htmlFor="date">
-                When? <span className="text-[var(--peach-500)]">*</span>
-              </label>
-              <input
-                id="date"
-                type="date"
-                className="w-full px-4 py-3 border-2 border-[var(--lavender-200)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--mint-300)] focus:border-transparent text-[var(--charcoal-900)]"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-              />
+            {/* Event Date & Time */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1 text-[var(--charcoal-900)]" htmlFor="date">
+                  When? <span className="text-[var(--peach-500)]">*</span>
+                </label>
+                <input
+                  id="date"
+                  type="date"
+                  className="w-full px-4 py-3 border-2 border-[var(--lavender-200)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--mint-300)] focus:border-transparent text-[var(--charcoal-900)]"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 text-[var(--charcoal-900)]" htmlFor="time">
+                  What time?
+                </label>
+                <input
+                  id="time"
+                  type="time"
+                  className="w-full px-4 py-3 border-2 border-[var(--lavender-200)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--mint-300)] focus:border-transparent text-[var(--charcoal-900)]"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                />
+              </div>
             </div>
 
             {/* Location */}

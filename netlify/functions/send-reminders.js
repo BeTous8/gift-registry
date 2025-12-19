@@ -16,8 +16,18 @@ const supabase = createClient(
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Get readable label for reminder type
-function getReminderLabel(reminderType) {
+// Get readable label for reminder
+function getReminderLabel(reminder) {
+  // Support new flexible format (reminder_amount + reminder_unit)
+  if (reminder.reminder_amount && reminder.reminder_unit) {
+    const amount = reminder.reminder_amount;
+    const unit = reminder.reminder_unit;
+    // Singularize unit if amount is 1
+    const unitLabel = amount === 1 ? unit.replace(/s$/, '') : unit;
+    return `${amount} ${unitLabel}`;
+  }
+
+  // Fallback: support legacy reminder_type format
   const labels = {
     '1_hour': '1 hour',
     '2_hours': '2 hours',
@@ -28,7 +38,7 @@ function getReminderLabel(reminderType) {
     '2_weeks': '2 weeks',
     '1_month': '1 month',
   };
-  return labels[reminderType] || reminderType;
+  return labels[reminder.reminder_type] || reminder.reminder_type || 'soon';
 }
 
 // Format date for display
@@ -132,6 +142,8 @@ exports.handler = async (event, context) => {
         id,
         event_id,
         reminder_type,
+        reminder_amount,
+        reminder_unit,
         send_to_members,
         scheduled_for
       `)
@@ -238,7 +250,7 @@ exports.handler = async (event, context) => {
         const emailHtml = generateEmailHtml(
           event.title,
           formatDate(event.event_date),
-          getReminderLabel(reminder.reminder_type),
+          getReminderLabel(reminder),
           ownerName,
           eventUrl,
           locationName

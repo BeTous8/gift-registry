@@ -83,9 +83,17 @@ CREATE POLICY "Users can create reminders for their events"
   );
 
 -- Policy: Users can update reminders for their own events
+-- WITH CHECK prevents users from "moving" reminders to events they don't own
 CREATE POLICY "Users can update reminders for their events"
   ON event_reminders FOR UPDATE
   USING (
+    EXISTS (
+      SELECT 1 FROM events
+      WHERE events.id = event_reminders.event_id
+      AND events.user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
     EXISTS (
       SELECT 1 FROM events
       WHERE events.id = event_reminders.event_id
@@ -133,6 +141,48 @@ BEGIN
   END;
 END;
 $$ LANGUAGE plpgsql;
+
+-- ============================================
+-- AUTO-CALCULATE scheduled_for TRIGGER
+-- Prevents users from inserting fake timestamps
+-- Always calculates scheduled_for from event_date and reminder_type
+-- ============================================
+
+CREATE OR REPLACE FUNCTION auto_calculate_scheduled_for()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_event_date DATE;
+BEGIN
+  -- Get the event_date from the events table
+  SELECT event_date INTO v_event_date
+  FROM events
+  WHERE id = NEW.event_id;
+
+  -- If event has no date, raise an error
+  IF v_event_date IS NULL THEN
+    RAISE EXCEPTION 'Cannot create reminder for event without a date';
+  END IF;
+
+  -- Auto-calculate the scheduled_for timestamp (overrides any user-provided value)
+  NEW.scheduled_for := calculate_reminder_time(v_event_date, NEW.reminder_type);
+
+  -- Prevent reminders scheduled in the past
+  IF NEW.scheduled_for < NOW() THEN
+    RAISE EXCEPTION 'Cannot create reminder for a time that has already passed';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Drop trigger if exists (for idempotency)
+DROP TRIGGER IF EXISTS auto_set_scheduled_for ON event_reminders;
+
+-- Create the trigger for INSERT and UPDATE
+CREATE TRIGGER auto_set_scheduled_for
+  BEFORE INSERT OR UPDATE ON event_reminders
+  FOR EACH ROW
+  EXECUTE FUNCTION auto_calculate_scheduled_for();
 
 -- ============================================
 -- GRANT SERVICE ROLE ACCESS
