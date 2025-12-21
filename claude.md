@@ -2,6 +2,17 @@
 
 ---
 
+## Claude Rules
+  1. First think through the problem, read the codebase for relevant files, and write a plan to tasks/todo.md.
+  2. The plan should have a list of todo items that you can check off as you complete them
+  3. Before you begin working, check in with me and I will verify the plan.
+  4. Then, begin working on the todo items, marking them as complete as you go.
+  5. Please every step of the way just give me a high level explanation of what changes you made
+  6. Make every task and code change you do as simple as possible. We want to avoid making any massive or complex changes. Every change should impact as little code as possible. Everything is about simplicity.
+  7. Finally, add a review section to the todo.md file with a summary of the changes you made and any other relevant information.
+  8. DO NOT BE LAZY. NEVER BE LAZY. IF THERE IS A BUG FIND THE ROOT CAUSE AND FIX IT. NO TEMPORARY FIXES. YOU ARE A SENIOR DEVELOPER. NEVER BE LAZY
+  9. MAKE ALL FIXES AND CODE CHANGES AS SIMPLE AS HUMANLY POSSIBLE. THEY SHOULD ONLY IMPACT NECESSARY CODE RELEVANT TO THE TASK AND NOTHING ELSE. IT SHOULD IMPACT AS LITTLE CODE AS POSSIBLE. YOUR GOAL IS TO NOT INTRODUCE ANY BUGS. IT'S ALL ABOUT SIMPLICITY
+
 ## 📋 CURRENT SESSION TODOS
 
 > **IMPORTANT FOR CLAUDE:** Always check this section first when starting a new session. These are the active tasks that need continuation.
@@ -106,6 +117,29 @@
 - ✅ Full Calendar page displays all events correctly
 - ✅ Unified Event Creation Modal (used by Dashboard and Calendar)
 - ✅ "Spawn Registry from Recurring Event" feature
+
+---
+
+### 🔄 IN PROGRESS - Amazon Affiliate Links (December 2025)
+
+**Status:** Code implementation COMPLETE - Apply for Amazon Associates later (when you have real users)
+**Full Documentation:** `.claude/plans/AMAZON_AFFILIATE_SETUP.md`
+
+**What's Implemented:**
+- ✅ Created `app/utils/affiliateLinks.js` - transforms Amazon URLs to include affiliate tag
+- ✅ Updated `app/event/[slug]/page.jsx` - "View Product" links now use affiliate utility
+- ✅ Added FTC disclosure above items (only shows when Amazon links present)
+- ✅ Added `NEXT_PUBLIC_AMAZON_AFFILIATE_TAG` env variable (empty placeholder)
+
+**To Complete Later (when you have real users):**
+1. Apply for Amazon Associates at https://affiliate-program.amazon.com/
+2. Get your Associate Tag (e.g., `memora-20`)
+3. Add tag to `.env.local` and Netlify: `NEXT_PUBLIC_AMAZON_AFFILIATE_TAG=memora-20`
+
+**Key Notes:**
+- 180-day rule: Must generate 3 qualifying sales within 180 days of approval
+- Commission rates: 1-10% depending on product category
+- Code works safely with empty tag (returns original URLs unchanged)
 
 ---
 
@@ -218,6 +252,7 @@ For detailed historical information, see:
 - **FULFILLMENT_*.md** - Fulfillment system architecture and plans
 - **AGENT_USAGE_GUIDE.md** - Specialized agent coordination guide
 - **DESIGN_DIRECTION_GUIDE.md** - UI/UX design principles
+- **.claude/plans/AMAZON_AFFILIATE_SETUP.md** - Amazon Associates setup guide (apply when you have real users)
 
 ---
 

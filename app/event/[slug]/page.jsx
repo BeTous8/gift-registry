@@ -13,6 +13,7 @@ import RedemptionModal from "../../components/RedemptionModal";
 import AddToCalendarButton from "../../components/AddToCalendarButton";
 import EventRemindersPanel from "../../components/EventRemindersPanel";
 import { parseLocalDate } from "../../lib/dateUtils";
+import { addAffiliateTag } from "../../utils/affiliateLinks";
 
 export default function ViewEventPage() {
   const { slug } = useParams();
@@ -819,6 +820,12 @@ export default function ViewEventPage() {
                       isCasualMeetup ? 'text-[var(--mint-400)]' : 'text-[var(--lavender-600)]'
                     }`}>
                       {formatDate(event.event_date)}
+                      {event.event_time && (() => {
+                        const [hours, minutes] = event.event_time.split(':');
+                        const date = new Date();
+                        date.setHours(parseInt(hours), parseInt(minutes));
+                        return ` at ${date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+                      })()}
                     </div>
                   )}
                   <div>
@@ -1563,6 +1570,18 @@ export default function ViewEventPage() {
                       </div>
                     )}
 
+                {/* Affiliate Disclosure - only show if any items have Amazon links */}
+                {items.some(item =>
+                  item.product_link?.includes('amazon.com') ||
+                  item.product_link?.includes('amazon.co.') ||
+                  item.product_link?.includes('amzn.to') ||
+                  item.product_link?.includes('a.co/')
+                ) && (
+                  <p className="text-xs text-gray-500 mb-4 text-center">
+                    As an Amazon Associate, Memora earns from qualifying purchases made through product links.
+                  </p>
+                )}
+
                 <div className="grid gap-6 md:grid-cols-2">
                   {items.length === 0 ? (
                     <div className="col-span-full text-center text-gray-900 italic">
@@ -1613,7 +1632,7 @@ export default function ViewEventPage() {
                               </div>
                               {item.product_link && (
                                 <a
-                                  href={item.product_link}
+                                  href={addAffiliateTag(item.product_link)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium mb-2 transition"
