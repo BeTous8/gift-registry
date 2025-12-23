@@ -136,7 +136,7 @@ export async function GET(request) {
     // Get user's contacts
     const { data: contacts, error: fetchError } = await supabaseAdmin
       .from('user_contacts')
-      .select('id, contact_user_id, created_at')
+      .select('id, contact_user_id, created_at, birthday_month, birthday_day, birthday_event_id')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -178,7 +178,10 @@ export async function GET(request) {
           first_name: firstName,
           last_name: lastName,
           full_name: `${firstName} ${lastName}`.trim(),
-          created_at: contact.created_at
+          created_at: contact.created_at,
+          birthday_month: contact.birthday_month,
+          birthday_day: contact.birthday_day,
+          birthday_event_id: contact.birthday_event_id
         };
       })
     );

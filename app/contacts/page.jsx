@@ -17,6 +17,16 @@ export default function ContactsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState(null);
 
+  // Birthday states
+  const [editingBirthdayContactId, setEditingBirthdayContactId] = useState(null);
+  const [birthdayMonth, setBirthdayMonth] = useState("");
+  const [birthdayDay, setBirthdayDay] = useState("");
+  const [savingBirthday, setSavingBirthday] = useState(false);
+  const [calendarModalOpen, setCalendarModalOpen] = useState(false);
+  const [pendingBirthdayContact, setPendingBirthdayContact] = useState(null);
+
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
   // Fetch user session and redirect if not logged in
   useEffect(() => {
     let ignore = false;
@@ -136,6 +146,115 @@ export default function ContactsPage() {
   const handleContactAdded = (newContact) => {
     setContacts([newContact, ...contacts]);
     setShowAddContactModal(false);
+  };
+
+  // Birthday handlers
+  const handleOpenBirthdayPicker = (contact) => {
+    setEditingBirthdayContactId(contact.id);
+    setBirthdayMonth(contact.birthday_month ? String(contact.birthday_month) : "");
+    setBirthdayDay(contact.birthday_day ? String(contact.birthday_day) : "");
+  };
+
+  const handleCloseBirthdayPicker = () => {
+    setEditingBirthdayContactId(null);
+    setBirthdayMonth("");
+    setBirthdayDay("");
+  };
+
+  const handleSaveBirthday = async (contact) => {
+    if (!birthdayMonth || !birthdayDay) return;
+
+    // Save birthday and show calendar modal
+    setPendingBirthdayContact({
+      ...contact,
+      newMonth: parseInt(birthdayMonth),
+      newDay: parseInt(birthdayDay)
+    });
+    setCalendarModalOpen(true);
+    setEditingBirthdayContactId(null);
+  };
+
+  const handleCalendarConfirm = async (addToCalendar) => {
+    if (!pendingBirthdayContact || !user?.id) return;
+
+    setSavingBirthday(true);
+    try {
+      const response = await fetch(`/api/contacts/${pendingBirthdayContact.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          birthday_month: pendingBirthdayContact.newMonth,
+          birthday_day: pendingBirthdayContact.newDay,
+          add_to_calendar: addToCalendar,
+          contact_name: pendingBirthdayContact.full_name || pendingBirthdayContact.email
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert(error.error || 'Failed to save birthday');
+        return;
+      }
+
+      const data = await response.json();
+
+      // Update local state
+      setContacts(contacts.map(c =>
+        c.id === pendingBirthdayContact.id
+          ? {
+              ...c,
+              birthday_month: data.contact.birthday_month,
+              birthday_day: data.contact.birthday_day,
+              birthday_event_id: data.contact.birthday_event_id
+            }
+          : c
+      ));
+    } catch (error) {
+      console.error('Error saving birthday:', error);
+      alert('Failed to save birthday. Please try again.');
+    } finally {
+      setSavingBirthday(false);
+      setCalendarModalOpen(false);
+      setPendingBirthdayContact(null);
+      setBirthdayMonth("");
+      setBirthdayDay("");
+    }
+  };
+
+  const handleRemoveBirthday = async (contact) => {
+    if (!user?.id) return;
+
+    setSavingBirthday(true);
+    try {
+      const response = await fetch(`/api/contacts/${contact.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          birthday_month: null,
+          birthday_day: null
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert(error.error || 'Failed to remove birthday');
+        return;
+      }
+
+      // Update local state
+      setContacts(contacts.map(c =>
+        c.id === contact.id
+          ? { ...c, birthday_month: null, birthday_day: null, birthday_event_id: null }
+          : c
+      ));
+    } catch (error) {
+      console.error('Error removing birthday:', error);
+      alert('Failed to remove birthday. Please try again.');
+    } finally {
+      setSavingBirthday(false);
+    }
   };
 
   // Filter contacts by search query
@@ -294,6 +413,85 @@ export default function ContactsPage() {
                     </div>
                   </div>
 
+                  {/* Birthday Section */}
+                  <div className="mb-3">
+                    {editingBirthdayContactId === contact.id ? (
+                      // Birthday Picker
+                      <div className="flex items-center gap-2 bg-white/70 rounded-lg p-2">
+                        <select
+                          value={birthdayMonth}
+                          onChange={(e) => setBirthdayMonth(e.target.value)}
+                          className="flex-1 px-2 py-1 text-sm border border-purple-200 rounded bg-white text-gray-900"
+                        >
+                          <option value="">Month</option>
+                          {MONTHS.map((m, i) => (
+                            <option key={i} value={i + 1}>{m}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={birthdayDay}
+                          onChange={(e) => setBirthdayDay(e.target.value)}
+                          className="w-16 px-2 py-1 text-sm border border-purple-200 rounded bg-white text-gray-900"
+                        >
+                          <option value="">Day</option>
+                          {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => handleSaveBirthday(contact)}
+                          disabled={!birthdayMonth || !birthdayDay}
+                          className="px-2 py-1 text-sm bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={handleCloseBirthdayPicker}
+                          className="px-2 py-1 text-sm text-gray-900 hover:text-gray-700"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : contact.birthday_month && contact.birthday_day ? (
+                      // Display Birthday
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-pink-100 text-pink-700 rounded-full text-sm font-medium">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 15.546c-.523 0-1.046.151-1.5.454a2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0A2.704 2.704 0 003 15.546V12a9 9 0 0118 0v3.546z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v4" />
+                          </svg>
+                          {MONTHS[contact.birthday_month - 1]} {contact.birthday_day}
+                        </span>
+                        <button
+                          onClick={() => handleOpenBirthdayPicker(contact)}
+                          className="text-xs text-purple-600 hover:text-purple-800"
+                          title="Edit birthday"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleRemoveBirthday(contact)}
+                          className="text-xs text-red-500 hover:text-red-700"
+                          title="Remove birthday"
+                          disabled={savingBirthday}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      // Add Birthday Button
+                      <button
+                        onClick={() => handleOpenBirthdayPicker(contact)}
+                        className="text-sm text-purple-600 hover:text-purple-800 flex items-center gap-1"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Birthday
+                      </button>
+                    )}
+                  </div>
+
                   {/* Date Added */}
                   <div className="pt-3 border-t border-white/50">
                     <p className="text-xs text-gray-900">
@@ -344,6 +542,52 @@ export default function ContactsPage() {
                 disabled={deletingContactId === contactToDelete.id}
               >
                 {deletingContactId === contactToDelete.id ? "Removing..." : "Remove"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Calendar Confirmation Modal */}
+      {calendarModalOpen && pendingBirthdayContact && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => !savingBirthday && handleCalendarConfirm(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Add to Calendar?</h3>
+                <p className="text-sm text-gray-600">
+                  {MONTHS[pendingBirthdayContact.newMonth - 1]} {pendingBirthdayContact.newDay}
+                </p>
+              </div>
+            </div>
+            <p className="text-gray-900 mb-6">
+              Would you like to add <span className="font-semibold">{pendingBirthdayContact.full_name || pendingBirthdayContact.email}</span>&apos;s birthday as a yearly reminder in your calendar?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => handleCalendarConfirm(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-900 rounded font-semibold hover:bg-gray-300 transition"
+                disabled={savingBirthday}
+              >
+                No, just save
+              </button>
+              <button
+                onClick={() => handleCalendarConfirm(true)}
+                className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded font-semibold hover:from-pink-600 hover:to-purple-700 transition disabled:opacity-50"
+                disabled={savingBirthday}
+              >
+                {savingBirthday ? "Saving..." : "Yes, add to calendar"}
               </button>
             </div>
           </div>
