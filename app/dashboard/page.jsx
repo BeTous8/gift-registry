@@ -1289,7 +1289,12 @@ function DashboardContent() {
                                         e.stopPropagation();
                                         setOpenMenuId(null);
                                         setEditingEvent(event);
-                                        setShowCreateEventModal(true);
+                                        // Route to correct modal based on event category
+                                        if (event.event_category === "casual") {
+                                          setShowCasualMeetupModal(true);
+                                        } else {
+                                          setShowCreateEventModal(true);
+                                        }
                                       }}
                                       className="w-full text-left px-4 py-2 text-sm text-[var(--charcoal-900)] hover:bg-[var(--lavender-50)] flex items-center gap-2"
                                     >
@@ -1488,17 +1493,29 @@ function DashboardContent() {
         {/* Casual Meetup Modal */}
         {showCasualMeetupModal && (
           <CasualMeetupModal
-            onClose={() => setShowCasualMeetupModal(false)}
+            onClose={() => {
+              setShowCasualMeetupModal(false);
+              setEditingEvent(null);
+            }}
             onSuccess={(newEvent) => {
-              // Refresh events after creation
+              // Refresh events after creation/edit
               if (user) {
                 fetchEvents(user.id);
               }
-              // Navigate to the event page
-              if (newEvent?.slug) {
+              setEditingEvent(null);
+              // Navigate to the event page only for new events
+              if (!editingEvent && newEvent?.slug) {
                 router.push(`/event/${newEvent.slug}?from=my-events`);
               }
             }}
+            prefillData={editingEvent ? {
+              title: editingEvent.title,
+              event_date: editingEvent.event_date,
+              event_time: editingEvent.event_time,
+              location: editingEvent.location,
+            } : {}}
+            isEditing={!!editingEvent}
+            eventId={editingEvent?.id}
           />
         )}
       </div>

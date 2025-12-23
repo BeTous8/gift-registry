@@ -10,11 +10,17 @@ import supabase from "../lib/supabase";
  * Includes: Title, Date, Location, and Quick Invite flow
  * No gift registry - just calendar events
  */
-export default function CasualMeetupModal({ onClose, onSuccess, prefillData = {} }) {
-  const [title, setTitle] = useState("");
+export default function CasualMeetupModal({
+  onClose,
+  onSuccess,
+  prefillData = {},
+  isEditing = false,
+  eventId = null
+}) {
+  const [title, setTitle] = useState(prefillData.title || "");
   const [date, setDate] = useState(prefillData.event_date || "");
   const [time, setTime] = useState(prefillData.event_time || "");
-  const [location, setLocation] = useState(null);
+  const [location, setLocation] = useState(prefillData.location || null);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [addToCalendar, setAddToCalendar] = useState(true);
 
@@ -58,52 +64,83 @@ export default function CasualMeetupModal({ onClose, onSuccess, prefillData = {}
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
-        setError("You must be logged in to create an event");
+        setError("You must be logged in to " + (isEditing ? "edit" : "create") + " an event");
         setLoading(false);
         return;
       }
 
-      // Generate slug and invite code
-      const slug = generateSlug(title);
-      const inviteCode = generateInviteCode();
+      if (isEditing && eventId) {
+        // UPDATE existing event via API
+        const response = await fetch(`/api/events/${eventId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({
+            title: title.trim(),
+            event_date: date || null,
+            event_time: time || null,
+            location: location || null,
+            event_category: "casual", // Preserve casual category
+          })
+        });
 
-      // Capture user's timezone for accurate reminder calculations
-      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const result = await response.json();
+        setLoading(false);
 
-      // Insert casual event
-      const { data, error: insertError } = await supabase
-        .from("events")
-        .insert({
-          user_id: session.user.id,
-          title: title.trim(),
-          slug: slug,
-          description: null,
-          event_date: date || null,
-          event_time: time || null,
-          event_category: "casual",
-          invite_code: inviteCode,
-          location: location || null,
-          is_recurring: false,
-          registry_enabled: false,
-          is_private: false,
-          timezone: userTimezone
-        })
-        .select()
-        .single();
+        if (!response.ok) {
+          setError(result.error || "Failed to update event. Please try again.");
+          return;
+        }
 
-      setLoading(false);
+        // Success - call onSuccess and close (skip invite flow for edits)
+        onSuccess(result.event);
+        onClose();
+      } else {
+        // CREATE new event
+        // Generate slug and invite code
+        const slug = generateSlug(title);
+        const inviteCode = generateInviteCode();
 
-      if (insertError) {
-        setError(insertError.message || "Failed to create event. Please try again.");
-        return;
+        // Capture user's timezone for accurate reminder calculations
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        // Insert casual event
+        const { data, error: insertError } = await supabase
+          .from("events")
+          .insert({
+            user_id: session.user.id,
+            title: title.trim(),
+            slug: slug,
+            description: null,
+            event_date: date || null,
+            event_time: time || null,
+            event_category: "casual",
+            invite_code: inviteCode,
+            location: location || null,
+            is_recurring: false,
+            registry_enabled: false,
+            is_private: false,
+            timezone: userTimezone
+          })
+          .select()
+          .single();
+
+        setLoading(false);
+
+        if (insertError) {
+          setError(insertError.message || "Failed to create event. Please try again.");
+          return;
+        }
+
+        // Event created - now show invite modal
+        setCreatedEvent(data);
+        setShowInviteModal(true);
       }
-
-      // Event created - now show invite modal
-      setCreatedEvent(data);
-      setShowInviteModal(true);
     } catch (err) {
-      console.error("Error creating casual meetup:", err);
-      setError("Failed to create event. Please try again.");
+      console.error("Error " + (isEditing ? "updating" : "creating") + " casual meetup:", err);
+      setError("Failed to " + (isEditing ? "update" : "create") + " event. Please try again.");
       setLoading(false);
     }
   };
@@ -157,7 +194,7 @@ export default function CasualMeetupModal({ onClose, onSuccess, prefillData = {}
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl sm:text-3xl font-bold font-display bg-gradient-to-r from-[var(--mint-300)] to-[var(--mint-400)] bg-clip-text text-transparent">
-              Casual Meet-up
+              {isEditing ? "Edit Meet-up" : "Casual Meet-up"}
             </h2>
             <button
               onClick={onClose}
@@ -288,7 +325,9 @@ export default function CasualMeetupModal({ onClose, onSuccess, prefillData = {}
               className="w-full bg-gradient-to-r from-[var(--mint-300)] to-[var(--mint-400)] text-white py-3 rounded-xl font-bold hover:from-[var(--mint-400)] hover:to-[var(--lavender-400)] transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none mt-4"
               disabled={loading || !title.trim() || !date}
             >
-              {loading ? "Creating..." : "Create & Invite Friends"}
+              {loading
+                ? (isEditing ? "Updating..." : "Creating...")
+                : (isEditing ? "Update Meet-up" : "Create & Invite Friends")}
             </button>
           </form>
         </div>
