@@ -34,6 +34,7 @@ function DashboardContent() {
   const [openMenuId, setOpenMenuId] = useState(null); // Track which event's menu is open
   const [editingEvent, setEditingEvent] = useState(null); // Event being edited
   const [pinnedEvents, setPinnedEvents] = useState(new Set()); // Track pinned event IDs
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState(null); // User's profile photo
 
   // Load pinned events from localStorage on mount
   useEffect(() => {
@@ -171,6 +172,7 @@ function DashboardContent() {
         fetchJoinedEvents(currentSession.user.id);
         fetchPendingInvitations(currentSession.user.id);
         fetchFulfillments();
+        fetchProfilePhoto(currentSession.user.id);
       } catch (error) {
         console.error('Error getting session:', error);
         if (!ignore) {
@@ -428,6 +430,21 @@ function DashboardContent() {
       setFulfillments([]);
     } finally {
       setLoadingFulfillments(false);
+    }
+  }
+
+  // Fetch user's profile photo
+  async function fetchProfilePhoto(userId) {
+    try {
+      const response = await fetch(`/api/account/profile?userId=${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.profile?.profile_photo_url) {
+          setProfilePhotoUrl(data.profile.profile_photo_url);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching profile photo:', error);
     }
   }
 
@@ -779,27 +796,52 @@ function DashboardContent() {
         {/* User Profile Section - Always visible at bottom */}
         <div className="border-t border-[var(--lavender-200)] p-3 flex-shrink-0">
           {sidebarOpen ? (
-            <div className="flex items-center gap-2.5 mb-2">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--lavender-400)] to-[var(--peach-400)] flex items-center justify-center shadow-md">
-                <span className="text-white font-semibold text-sm">
-                  {user?.email?.charAt(0).toUpperCase() || "U"}
-                </span>
-              </div>
+            <button
+              onClick={() => router.push("/account")}
+              className="w-full flex items-center gap-2.5 mb-2 p-2 rounded-lg hover:bg-[var(--lavender-50)] transition text-left"
+            >
+              {profilePhotoUrl ? (
+                <img
+                  src={profilePhotoUrl}
+                  alt="Profile"
+                  className="w-9 h-9 rounded-full object-cover shadow-md"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--lavender-400)] to-[var(--peach-400)] flex items-center justify-center shadow-md">
+                  <span className="text-white font-semibold text-sm">
+                    {user?.email?.charAt(0).toUpperCase() || "U"}
+                  </span>
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-[var(--charcoal-900)] truncate">
                   {user?.email || "User"}
                 </p>
-                <p className="text-xs text-[var(--charcoal-800)]/60 truncate">Account</p>
+                <p className="text-xs text-[var(--charcoal-800)]/60 truncate">Account Settings</p>
               </div>
-            </div>
+              <svg className="w-4 h-4 text-[var(--charcoal-800)]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           ) : (
-            <div className="flex justify-center mb-2">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--lavender-400)] to-[var(--peach-400)] flex items-center justify-center shadow-md">
-                <span className="text-white font-semibold text-sm">
-                  {user?.email?.charAt(0).toUpperCase() || "U"}
-                </span>
-              </div>
-            </div>
+            <button
+              onClick={() => router.push("/account")}
+              className="w-full flex justify-center mb-2 p-2 rounded-lg hover:bg-[var(--lavender-50)] transition"
+            >
+              {profilePhotoUrl ? (
+                <img
+                  src={profilePhotoUrl}
+                  alt="Profile"
+                  className="w-9 h-9 rounded-full object-cover shadow-md"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--lavender-400)] to-[var(--peach-400)] flex items-center justify-center shadow-md">
+                  <span className="text-white font-semibold text-sm">
+                    {user?.email?.charAt(0).toUpperCase() || "U"}
+                  </span>
+                </div>
+              )}
+            </button>
           )}
           <button
             onClick={handleSignOut}
@@ -1415,6 +1457,7 @@ function DashboardContent() {
             prefillData={editingEvent ? {
               title: editingEvent.title,
               event_date: editingEvent.event_date,
+              event_time: editingEvent.event_time,
               description: editingEvent.description,
               event_type: editingEvent.event_category === "casual" ? "casual-meetup" : "gift-registry",
               location: editingEvent.location,

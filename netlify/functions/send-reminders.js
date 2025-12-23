@@ -175,7 +175,7 @@ exports.handler = async (event, context) => {
     // Process each reminder
     for (const reminder of pendingReminders) {
       try {
-        // Fetch event details with owner info
+        // Fetch event details
         const { data: event, error: eventError } = await supabase
           .from('events')
           .select(`
@@ -184,12 +184,7 @@ exports.handler = async (event, context) => {
             event_date,
             slug,
             location,
-            user_id,
-            users!events_user_id_fkey (
-              id,
-              email,
-              raw_user_meta_data
-            )
+            user_id
           `)
           .eq('id', reminder.event_id)
           .single();
@@ -200,11 +195,17 @@ exports.handler = async (event, context) => {
           continue;
         }
 
+        // Get owner info using Auth Admin API
+        const { data: ownerData, error: ownerError } = await supabase.auth.admin.getUserById(event.user_id);
+        if (ownerError) {
+          console.error(`Failed to get owner for reminder ${reminder.id}:`, ownerError);
+        }
+
         // Build recipient list
         const recipients = [];
-        const ownerEmail = event.users?.email;
-        const ownerName = event.users?.raw_user_meta_data?.full_name ||
-                         event.users?.raw_user_meta_data?.name ||
+        const ownerEmail = ownerData?.user?.email;
+        const ownerName = ownerData?.user?.user_metadata?.full_name ||
+                         ownerData?.user?.user_metadata?.name ||
                          'Event Host';
 
         // Always include owner
@@ -216,15 +217,21 @@ exports.handler = async (event, context) => {
         if (reminder.send_to_members) {
           const { data: members, error: membersError } = await supabase
             .from('event_members')
-            .select('user_id, users!event_members_user_id_fkey(email)')
+            .select('user_id')
             .eq('event_id', reminder.event_id)
             .eq('status', 'accepted');
 
           if (!membersError && members) {
+            // Get each member's email using Auth Admin API
             for (const member of members) {
-              const memberEmail = member.users?.email;
-              if (memberEmail && !recipients.includes(memberEmail)) {
-                recipients.push(memberEmail);
+              try {
+                const { data: memberData } = await supabase.auth.admin.getUserById(member.user_id);
+                const memberEmail = memberData?.user?.email;
+                if (memberEmail && !recipients.includes(memberEmail)) {
+                  recipients.push(memberEmail);
+                }
+              } catch (memberErr) {
+                console.error(`Failed to get member ${member.user_id}:`, memberErr);
               }
             }
           }
