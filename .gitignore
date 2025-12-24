@@ -46,6 +46,9 @@ CLAUDE.md
 # tutorials (local only)
 .claude/tutorial/
 
+# SQL migrations (run manually in Supabase)
+supabase_*.sql
+
 # vercel
 .vercel
 
