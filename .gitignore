@@ -36,6 +36,16 @@ yarn-error.log*
 # sensitive documentation (contains API keys)
 EMAIL_DELIVERABILITY_STATUS.md
 
+# project instructions (local only)
+claude.md
+CLAUDE.md
+
+# task tracking (local only)
+/tasks/
+
+# tutorials (local only)
+.claude/tutorial/
+
 # vercel
 .vercel
 

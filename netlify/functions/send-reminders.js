@@ -278,10 +278,17 @@ exports.handler = async (event, context) => {
         }
 
         // Mark reminder as sent
-        await supabase
+        const { error: updateError } = await supabase
           .from('event_reminders')
           .update({ is_sent: true, sent_at: now })
           .eq('id', reminder.id);
+
+        if (updateError) {
+          console.error(`Failed to mark reminder ${reminder.id} as sent:`, updateError);
+          // Email was sent but DB update failed - log but count as partial success
+          errorCount++;
+          continue;
+        }
 
         console.log(`Sent reminder ${reminder.id} to ${recipients.length} recipients`);
         sentCount++;
