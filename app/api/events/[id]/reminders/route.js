@@ -7,8 +7,8 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Valid reminder units
-const VALID_REMINDER_UNITS = ['minutes', 'hours', 'days', 'weeks'];
+// Valid reminder units (no minutes - Netlify cron runs hourly)
+const VALID_REMINDER_UNITS = ['hours', 'days', 'weeks'];
 
 // Legacy reminder types (for backwards compatibility)
 const VALID_REMINDER_TYPES = [
@@ -63,8 +63,9 @@ function getTimezoneOffset(date, timezone) {
  * @returns {Date} The scheduled reminder time in UTC
  */
 function calculateScheduledFor(eventDate, eventTime, reminderAmount, reminderUnit, timezone = 'America/Los_Angeles') {
-  // Parse date and time components
-  const [year, month, day] = eventDate.split('-').map(Number);
+  // Parse date - handle both "YYYY-MM-DD" and ISO format "YYYY-MM-DDTHH:MM:SS"
+  const dateOnly = eventDate.split('T')[0];
+  const [year, month, day] = dateOnly.split('-').map(Number);
   const timeStr = eventTime || '09:00:00';
   const [hours, minutes, seconds = 0] = timeStr.split(':').map(Number);
 
@@ -249,6 +250,17 @@ export async function POST(request, { params }) {
       finalUnit,
       event.timezone || 'America/Los_Angeles' // Fallback for existing events without timezone
     );
+
+    // Debug: Log calculation details
+    console.log('[Reminder Debug]', JSON.stringify({
+      event_date: event.event_date,
+      event_time: event.event_time,
+      timezone: event.timezone,
+      reminder: `${finalAmount} ${finalUnit}`,
+      scheduledFor: scheduledFor.toISOString(),
+      now: new Date().toISOString(),
+      diff_minutes: Math.round((scheduledFor - new Date()) / 60000)
+    }));
 
     // Validate reminder is not in the past
     if (scheduledFor < new Date()) {

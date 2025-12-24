@@ -23,9 +23,8 @@ export default function EventRemindersPanel({ eventId, eventDate, isOwner }) {
   const [reminderUnit, setReminderUnit] = useState("hours");
   const [sendToMembers, setSendToMembers] = useState(true);
 
-  // Unit options for dropdown
+  // Unit options for dropdown (no minutes - Netlify cron runs hourly)
   const unitOptions = [
-    { value: 'minutes', label: 'minutes' },
     { value: 'hours', label: 'hours' },
     { value: 'days', label: 'days' },
     { value: 'weeks', label: 'weeks' },
@@ -279,12 +278,12 @@ export default function EventRemindersPanel({ eventId, eventDate, isOwner }) {
                     placeholder="30"
                     value={reminderAmount}
                     onChange={(e) => setReminderAmount(e.target.value)}
-                    className="w-20 px-3 py-2 text-sm border border-[var(--lavender-200)] rounded-lg focus:ring-2 focus:ring-[var(--lavender-400)] focus:border-transparent bg-white text-center"
+                    className="w-20 px-3 py-2 text-sm border border-[var(--lavender-200)] rounded-lg focus:ring-2 focus:ring-[var(--lavender-400)] focus:border-transparent bg-white text-center text-[var(--charcoal-900)]"
                   />
                   <select
                     value={reminderUnit}
                     onChange={(e) => setReminderUnit(e.target.value)}
-                    className="flex-1 px-3 py-2 text-sm border border-[var(--lavender-200)] rounded-lg focus:ring-2 focus:ring-[var(--lavender-400)] focus:border-transparent bg-white"
+                    className="flex-1 px-3 py-2 text-sm border border-[var(--lavender-200)] rounded-lg focus:ring-2 focus:ring-[var(--lavender-400)] focus:border-transparent bg-white text-[var(--charcoal-900)]"
                   >
                     {unitOptions.map(opt => (
                       <option key={opt.value} value={opt.value}>
