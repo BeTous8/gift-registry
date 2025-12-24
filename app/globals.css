@@ -197,3 +197,36 @@ html {
 .font-body {
   font-family: var(--font-inter), system-ui, sans-serif;
 }
+
+/* ===========================================
+   GLOBAL INPUT TEXT COLOR FIX
+   Ensures all form inputs have visible text
+   Uses Charcoal (#2D2A3E) from the design system
+   =========================================== */
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
+  color: var(--charcoal-900, #2D2A3E) !important;
+  background-color: #ffffff;
+}
+
+/* Placeholder styling - slightly lighter for visual hierarchy */
+input::placeholder,
+textarea::placeholder {
+  color: var(--charcoal-800, #3D3A50);
+  opacity: 0.6;
+}
+
+/* Disabled input styling */
+input:disabled,
+textarea:disabled,
+select:disabled {
+  color: var(--charcoal-800, #3D3A50);
+  opacity: 0.6;
+}
+
+/*
+   NOTE: Dark mode for inputs intentionally NOT implemented here.
+   Inputs keep white background + dark text for maximum visibility.
+   When implementing app-wide dark mode, update this section.
+*/
