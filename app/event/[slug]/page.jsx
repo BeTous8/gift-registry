@@ -64,6 +64,7 @@ export default function ViewEventPage() {
   // Redemption states
   const [showRedemptionModal, setShowRedemptionModal] = useState(false);
   const [itemToRedeem, setItemToRedeem] = useState(null);
+  const [activeFulfillments, setActiveFulfillments] = useState({}); // Map of item_id -> fulfillment status
 
   // Page tab for special events (Registry vs Location)
   const [pageTab, setPageTab] = useState("registry");
@@ -139,6 +140,10 @@ export default function ViewEventPage() {
     // Fetch members and invitations
     if (session?.user) {
       fetchMembersAndInvitations(eventData.id, session.user.id);
+      // Fetch active fulfillments for owner
+      if (userIsOwner) {
+        fetchActiveFulfillments(eventData.id);
+      }
     }
 
     setLoading(false);
@@ -218,6 +223,35 @@ export default function ViewEventPage() {
     }
   };
 
+  // Fetch fulfillments for event items (for owner only)
+  const fetchActiveFulfillments = async (eventId) => {
+    if (!eventId) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch(`/api/fulfillments?eventId=${eventId}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Create a map of item_id -> fulfillment for quick lookup
+        // Include pending, processing, AND completed for showing details
+        const fulfillmentMap = {};
+        (data.fulfillments || []).forEach(f => {
+          if (f.status === 'pending' || f.status === 'processing' || f.status === 'completed') {
+            fulfillmentMap[f.item.id] = f;
+          }
+        });
+        setActiveFulfillments(fulfillmentMap);
+      }
+    } catch (error) {
+      console.error('Error fetching fulfillments:', error);
+    }
+  };
 
   // ... after handleCopyInviteLink, before verifyPaymentSession
 
@@ -838,9 +872,17 @@ export default function ViewEventPage() {
                     </span>
                   </div>
 
-                  {/* Location - prominent for casual meetups */}
+                  {/* Location - prominent for casual meetups, clickable for directions */}
                   {isCasualMeetup && event.location && (
-                    <div className="mt-4 inline-flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-md border border-[var(--mint-200)]">
+                    <a
+                      href={event.location.geometry
+                        ? `https://www.google.com/maps/dir/?api=1&destination=${event.location.geometry.lat},${event.location.geometry.lng}&destination_place_id=${event.location.place_id}`
+                        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location.formatted_address)}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-4 inline-flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-md border border-[var(--mint-200)] hover:bg-[var(--mint-50)] hover:border-[var(--mint-300)] transition-colors cursor-pointer"
+                    >
                       <svg className="w-5 h-5 text-[var(--mint-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -849,7 +891,7 @@ export default function ViewEventPage() {
                         <p className="font-medium text-[var(--charcoal-900)]">{event.location.name}</p>
                         <p className="text-sm text-[var(--charcoal-800)]">{event.location.formatted_address}</p>
                       </div>
-                    </div>
+                    </a>
                   )}
                 </div>
 
@@ -1484,7 +1526,7 @@ export default function ViewEventPage() {
                               <input
                                 id="item-title"
                                 type="text"
-                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200 text-[var(--charcoal-900)]"
                                 value={itemTitle}
                                 onChange={(e) => setItemTitle(e.target.value)}
                                 required
@@ -1501,7 +1543,7 @@ export default function ViewEventPage() {
                                 type="number"
                                 min="0.01"
                                 step="0.01"
-                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200 text-[var(--charcoal-900)]"
                                 value={itemPrice}
                                 onChange={(e) => setItemPrice(e.target.value)}
                                 required
@@ -1516,7 +1558,7 @@ export default function ViewEventPage() {
                               <input
                                 id="item-link"
                                 type="text"
-                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200 text-[var(--charcoal-900)]"
                                 value={itemProductLink}
                                 onChange={(e) => setItemProductLink(e.target.value)}
                                 disabled={itemLoading}
@@ -1530,7 +1572,7 @@ export default function ViewEventPage() {
                               <input
                                 id="item-img"
                                 type="text"
-                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-200 text-[var(--charcoal-900)]"
                                 value={itemImageUrl}
                                 onChange={(e) => setItemImageUrl(e.target.value)}
                                 disabled={itemLoading}
@@ -1675,8 +1717,22 @@ export default function ViewEventPage() {
                             <div className="flex flex-col gap-2 mt-4">
                               {isOwner ? (
                                 <>
-                                  {/* Redeem button - shown only when fully funded and not yet redeemed */}
-                                  {itemFunded && !isFulfilled && (
+                                  {/* Payout Processing - shown when fulfillment is pending/processing */}
+                                  {itemFunded && !isFulfilled && activeFulfillments[item.id] && (
+                                    <div className="w-full bg-blue-50 border-2 border-blue-400 text-blue-800 px-4 py-3 rounded-lg font-semibold">
+                                      <div className="flex items-center justify-center gap-2">
+                                        <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                        <span>Payout {activeFulfillments[item.id].status === 'pending' ? 'Pending' : 'Processing'}</span>
+                                      </div>
+                                      <p className="text-xs text-blue-600 text-center mt-1">
+                                        Est. arrival: {activeFulfillments[item.id].estimated_arrival || '2-7 business days'}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {/* Redeem button - shown only when fully funded, not redeemed, and no active fulfillment */}
+                                  {itemFunded && !isFulfilled && !activeFulfillments[item.id] && (
                                     <button
                                       onClick={() => handleRedeemClick(item)}
                                       className="w-full bg-gradient-to-r from-green-500 to-blue-600 text-white px-4 py-3 rounded-lg font-bold hover:from-green-600 hover:to-blue-700 transition shadow-lg flex items-center justify-center gap-2"
@@ -1687,13 +1743,27 @@ export default function ViewEventPage() {
                                       Redeem ${((raised / 100) * 0.95).toFixed(2)}
                                     </button>
                                   )}
-                                  {/* Already redeemed message */}
+                                  {/* Already redeemed message - with details */}
                                   {isFulfilled && (
-                                    <div className="w-full bg-green-50 border-2 border-green-500 text-green-800 px-4 py-3 rounded-lg font-semibold flex items-center justify-center gap-2">
-                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                      </svg>
-                                      Funds Redeemed
+                                    <div className="w-full bg-green-50 border-2 border-green-500 text-green-800 px-4 py-3 rounded-lg">
+                                      <div className="flex items-center justify-center gap-2 font-semibold">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Deposited to Bank
+                                      </div>
+                                      {activeFulfillments[item.id] && (
+                                        <div className="text-xs text-green-700 text-center mt-2 space-y-1">
+                                          <p className="font-medium">
+                                            ${(activeFulfillments[item.id].net_amount_cents / 100).toFixed(2)} received
+                                          </p>
+                                          {activeFulfillments[item.id].completed_at && (
+                                            <p>
+                                              Completed {new Date(activeFulfillments[item.id].completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </p>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                   {/* Edit/Delete buttons */}
@@ -1936,7 +2006,7 @@ export default function ViewEventPage() {
                   type="email"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-[var(--charcoal-900)]"
                   placeholder="friend@example.com"
                   required
                   disabled={inviteLoading}
