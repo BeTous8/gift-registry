@@ -8,6 +8,8 @@ import supabase from "../lib/supabase";
 import MiniCalendar from "../components/MiniCalendar";
 import CreateEventModal from "../components/CreateEventModal";
 import CasualMeetupModal from "../components/CasualMeetupModal";
+import EventTypeModal from "../components/EventTypeModal";
+import EventWizardModal from "../components/EventWizardModal";
 import { parseLocalDate, formatDateString, getDaysUntil, isWithinDays } from "../lib/dateUtils";
 
 function DashboardContent() {
@@ -31,6 +33,9 @@ function DashboardContent() {
   const [loadingFulfillments, setLoadingFulfillments] = useState(false);
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
   const [showCasualMeetupModal, setShowCasualMeetupModal] = useState(false);
+  const [showEventTypeModal, setShowEventTypeModal] = useState(false);
+  const [showEventWizard, setShowEventWizard] = useState(false);
+  const [selectedEventType, setSelectedEventType] = useState(null); // "birthday" or "casual"
   const [openMenuId, setOpenMenuId] = useState(null); // Track which event's menu is open
   const [editingEvent, setEditingEvent] = useState(null); // Event being edited
   const [pinnedEvents, setPinnedEvents] = useState(new Set()); // Track pinned event IDs
@@ -907,16 +912,16 @@ function DashboardContent() {
               <>
                 {/* Tab Content */}
                 {activeTab === "home" ? (
-                  /* Home Tab Content - Two main action buttons */
+                  /* Home Tab Content - Single Start Button */
                   <div className="flex items-center justify-center min-h-[60vh]">
-                    <div className="text-center max-w-4xl w-full">
+                    <div className="text-center">
                       <motion.h2
                         className="text-3xl sm:text-4xl font-bold font-display text-[var(--charcoal-900)] mb-3"
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, ease: "easeOut" }}
                       >
-                        What would you like to plan?
+                        Ready to plan something?
                       </motion.h2>
                       <motion.p
                         className="text-[var(--charcoal-800)] mb-12 text-lg"
@@ -924,125 +929,69 @@ function DashboardContent() {
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.5, delay: 0.2 }}
                       >
-                        Choose an option to get started
+                        Tap the button to get started
                       </motion.p>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 lg:gap-16">
-                        {/* Special Events Card */}
-                        <motion.button
-                          onClick={() => setShowCreateEventModal(true)}
-                          className="group relative p-8 sm:p-10 rounded-3xl bg-[var(--lavender-100)]/40 border border-[var(--lavender-200)]/50 overflow-hidden"
-                          initial={{ opacity: 0, x: -50, rotateY: -10 }}
-                          animate={{ opacity: 1, x: 0, rotateY: 0 }}
-                          transition={{ duration: 0.6, delay: 0.3, type: "spring", stiffness: 100 }}
-                          whileHover={{
-                            scale: 1.03,
-                            boxShadow: "0 25px 50px -12px rgba(184, 169, 232, 0.4)",
-                            transition: { duration: 0.3 }
-                          }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          {/* Animated gradient background on hover */}
+                      {/* Circular Start Button with Ripple Effect */}
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="relative">
+                          {/* Ripple waves */}
                           <motion.div
-                            className="absolute inset-0 bg-gradient-to-br from-[var(--lavender-200)]/0 via-[var(--lavender-100)]/0 to-[var(--peach-100)]/0 rounded-3xl"
-                            whileHover={{
-                              background: "linear-gradient(135deg, rgba(184, 169, 232, 0.3) 0%, rgba(237, 233, 254, 0.5) 50%, rgba(255, 205, 178, 0.3) 100%)"
+                            className="absolute inset-0 rounded-full bg-gradient-to-br from-[var(--lavender-400)] to-[var(--peach-400)]"
+                            animate={{
+                              scale: [1, 1.8, 1.8],
+                              opacity: [0.6, 0, 0]
                             }}
-                            transition={{ duration: 0.3 }}
-                          />
-
-                          <div className="relative z-10">
-                            <motion.div
-                              className="mb-6 flex justify-center"
-                              animate={{ y: [0, -8, 0] }}
-                              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                            >
-                              <motion.img
-                                src="/special-ceremony.png"
-                                alt="Special Events"
-                                className="w-40 h-40 sm:w-52 sm:h-52 object-contain"
-                                whileHover={{ scale: 1.1, rotate: [0, -3, 3, 0] }}
-                                transition={{ duration: 0.4 }}
-                              />
-                            </motion.div>
-                            <h3 className="text-2xl font-bold font-display text-[var(--charcoal-900)] mb-3 group-hover:text-[var(--lavender-600)] transition-colors duration-300">
-                              Special Events
-                            </h3>
-                            <p className="text-[var(--charcoal-800)]">
-                              Birthdays, Weddings, Anniversaries with gift registry
-                            </p>
-                          </div>
-
-                          {/* Sparkle effect on hover */}
-                          <motion.div
-                            className="absolute top-4 right-4 w-2 h-2 bg-[var(--lavender-400)] rounded-full opacity-0 group-hover:opacity-100"
-                            animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                            transition={{ duration: 1.5, repeat: Infinity }}
-                          />
-                          <motion.div
-                            className="absolute bottom-6 left-6 w-1.5 h-1.5 bg-[var(--peach-400)] rounded-full opacity-0 group-hover:opacity-100"
-                            animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
-                            transition={{ duration: 1.2, repeat: Infinity, delay: 0.3 }}
-                          />
-                        </motion.button>
-
-                        {/* Casual Meet-up Card */}
-                        <motion.button
-                          onClick={() => setShowCasualMeetupModal(true)}
-                          className="group relative p-8 sm:p-10 rounded-3xl bg-[var(--mint-100)]/40 border border-[var(--mint-200)]/50 overflow-hidden"
-                          initial={{ opacity: 0, x: 50, rotateY: 10 }}
-                          animate={{ opacity: 1, x: 0, rotateY: 0 }}
-                          transition={{ duration: 0.6, delay: 0.4, type: "spring", stiffness: 100 }}
-                          whileHover={{
-                            scale: 1.03,
-                            boxShadow: "0 25px 50px -12px rgba(181, 234, 215, 0.4)",
-                            transition: { duration: 0.3 }
-                          }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          {/* Animated gradient background on hover */}
-                          <motion.div
-                            className="absolute inset-0 bg-gradient-to-br from-[var(--mint-200)]/0 via-[var(--mint-100)]/0 to-[var(--buttercream-100)]/0 rounded-3xl"
-                            whileHover={{
-                              background: "linear-gradient(135deg, rgba(181, 234, 215, 0.3) 0%, rgba(208, 245, 229, 0.5) 50%, rgba(255, 243, 205, 0.3) 100%)"
+                            transition={{
+                              duration: 10,
+                              repeat: Infinity,
+                              times: [0, 0.1, 1],
+                              ease: "easeOut"
                             }}
-                            transition={{ duration: 0.3 }}
-                          />
-
-                          <div className="relative z-10">
-                            <motion.div
-                              className="mb-6 flex justify-center"
-                              animate={{ y: [0, -8, 0] }}
-                              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                            >
-                              <motion.img
-                                src="/casual-meetup.png"
-                                alt="Casual Meet-up"
-                                className="w-40 h-40 sm:w-52 sm:h-52 object-contain"
-                                whileHover={{ scale: 1.1, rotate: [0, 3, -3, 0] }}
-                                transition={{ duration: 0.4 }}
-                              />
-                            </motion.div>
-                            <h3 className="text-2xl font-bold font-display text-[var(--charcoal-900)] mb-3 group-hover:text-[var(--mint-400)] transition-colors duration-300">
-                              Casual Meet-up
-                            </h3>
-                            <p className="text-[var(--charcoal-800)]">
-                              Coffee, Dinner, Book Club - quick to set up
-                            </p>
-                          </div>
-
-                          {/* Sparkle effect on hover */}
-                          <motion.div
-                            className="absolute top-4 left-4 w-2 h-2 bg-[var(--mint-400)] rounded-full opacity-0 group-hover:opacity-100"
-                            animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                            transition={{ duration: 1.5, repeat: Infinity }}
                           />
                           <motion.div
-                            className="absolute bottom-6 right-6 w-1.5 h-1.5 bg-[var(--buttercream-200)] rounded-full opacity-0 group-hover:opacity-100"
-                            animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
-                            transition={{ duration: 1.2, repeat: Infinity, delay: 0.3 }}
+                            className="absolute inset-0 rounded-full bg-gradient-to-br from-[var(--lavender-400)] to-[var(--peach-400)]"
+                            animate={{
+                              scale: [1, 1.5, 1.5],
+                              opacity: [0.4, 0, 0]
+                            }}
+                            transition={{
+                              duration: 10,
+                              repeat: Infinity,
+                              times: [0, 0.08, 1],
+                              ease: "easeOut",
+                              delay: 0.05
+                            }}
                           />
-                        </motion.button>
+                          {/* Main button */}
+                          <motion.button
+                            onClick={() => setShowEventTypeModal(true)}
+                            className="relative w-24 h-24 lg:w-28 lg:h-28 rounded-full bg-gradient-to-br from-[var(--lavender-400)] to-[var(--peach-400)] border-[3px] border-white shadow-[0_8px_32px_rgba(184,169,232,0.4)] flex items-center justify-center text-white hover:shadow-[0_12px_40px_rgba(184,169,232,0.5)] focus:outline-none focus:ring-4 focus:ring-[var(--lavender-200)] transition-shadow duration-300"
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{
+                              scale: [1, 1.08, 1, 1, 1, 1, 1, 1, 1, 1],
+                              rotate: 0
+                            }}
+                            transition={{
+                              scale: { duration: 10, repeat: Infinity, ease: "easeInOut", times: [0, 0.05, 0.1, 0.15, 0.2, 0.4, 0.6, 0.8, 0.9, 1] },
+                              rotate: { type: "spring", stiffness: 200, damping: 15 }
+                            }}
+                            whileHover={{ scale: 1.08 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <svg className="w-10 h-10 lg:w-12 lg:h-12" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                          </motion.button>
+                        </div>
+                        <motion.span
+                          className="text-[var(--charcoal-900)] font-medium text-sm uppercase tracking-wide"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.5 }}
+                        >
+                          Start Planning
+                        </motion.span>
                       </div>
                     </div>
                   </div>
@@ -1516,6 +1465,39 @@ function DashboardContent() {
             } : {}}
             isEditing={!!editingEvent}
             eventId={editingEvent?.id}
+          />
+        )}
+
+        {/* Event Type Selection Modal */}
+        {showEventTypeModal && (
+          <EventTypeModal
+            onClose={() => setShowEventTypeModal(false)}
+            onSelectType={(type) => {
+              setSelectedEventType(type);
+              setShowEventTypeModal(false);
+              setShowEventWizard(true);
+            }}
+          />
+        )}
+
+        {/* Event Creation Wizard */}
+        {showEventWizard && selectedEventType && (
+          <EventWizardModal
+            eventType={selectedEventType}
+            onClose={() => {
+              setShowEventWizard(false);
+              setSelectedEventType(null);
+            }}
+            onSuccess={(newEvent) => {
+              // Refresh events after creation
+              if (user) {
+                fetchEvents(user.id);
+              }
+              // Navigate to the event page
+              if (newEvent?.slug) {
+                router.push(`/event/${newEvent.slug}?from=my-events`);
+              }
+            }}
           />
         )}
       </div>
