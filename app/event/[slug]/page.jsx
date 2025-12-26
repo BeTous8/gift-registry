@@ -89,6 +89,12 @@ export default function ViewEventPage() {
   const [copiedInviteLink, setCopiedInviteLink] = useState(false);
   const [showInviteFromContactsModal, setShowInviteFromContactsModal] = useState(false);
 
+  // SMS invite states
+  const [showSmsModal, setShowSmsModal] = useState(false);
+  const [invitePhone, setInvitePhone] = useState("");
+  const [smsLoading, setSmsLoading] = useState(false);
+  const [smsError, setSmsError] = useState("");
+
   // Add a useEffect to set mounted to true after the initial render
   useEffect(() => {
     setMounted(true);
@@ -207,6 +213,43 @@ export default function ViewEventPage() {
       setInviteError('Failed to send invitation. Please try again.');
     } finally {
       setInviteLoading(false);
+    }
+  };
+
+  // Handle sending SMS invite
+  const handleSendSmsInvite = async (e) => {
+    e.preventDefault();
+    if (!invitePhone.trim() || !event?.id || !user?.id) return;
+
+    setSmsLoading(true);
+    setSmsError("");
+
+    try {
+      const response = await fetch(`/api/events/${event.id}/invite-sms`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: invitePhone.trim(),
+          userId: user.id
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setSmsError(data.error || 'Failed to send SMS invitation');
+      } else {
+        showToast(data.smsSkipped ? 'Invitation created (SMS not configured)' : 'SMS invitation sent!', 'success');
+        setInvitePhone("");
+        setShowSmsModal(false);
+        // Refresh invitations list
+        fetchMembersAndInvitations(event.id, user.id);
+      }
+    } catch (error) {
+      console.error('Error sending SMS invitation:', error);
+      setSmsError('Failed to send SMS. Please try again.');
+    } finally {
+      setSmsLoading(false);
     }
   };
 
@@ -1165,9 +1208,19 @@ export default function ViewEventPage() {
                         className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[var(--lavender-400)] to-[var(--lavender-500)] text-white px-3 py-2 rounded-lg font-semibold text-sm hover:from-[var(--lavender-500)] hover:to-[var(--lavender-600)] transition"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                         Invite by Email
+                      </button>
+
+                      <button
+                        onClick={() => setShowSmsModal(true)}
+                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:from-green-600 hover:to-green-700 transition"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        Invite by SMS
                       </button>
 
                       <button
@@ -1986,7 +2039,7 @@ export default function ViewEventPage() {
         )}
       </div>
 
-      {/* Invite Modal */}
+      {/* Email Invite Modal */}
       {showInviteModal && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
@@ -1996,7 +2049,7 @@ export default function ViewEventPage() {
             className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Invite Someone</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Invite by Email</h3>
             <form onSubmit={handleSendInvite}>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-900 mb-1">
@@ -2036,6 +2089,63 @@ export default function ViewEventPage() {
                   disabled={inviteLoading || !inviteEmail.trim()}
                 >
                   {inviteLoading ? "Sending..." : "Send Invite"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* SMS Invite Modal */}
+      {showSmsModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setShowSmsModal(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Invite by SMS</h3>
+            <form onSubmit={handleSendSmsInvite}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
+                  Phone Number (US only)
+                </label>
+                <input
+                  type="tel"
+                  value={invitePhone}
+                  onChange={(e) => setInvitePhone(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-[var(--charcoal-900)]"
+                  placeholder="(555) 123-4567"
+                  required
+                  disabled={smsLoading}
+                />
+              </div>
+              {smsError && (
+                <div className="mb-4 text-red-600 text-sm bg-red-50 p-2 rounded">
+                  {smsError}
+                </div>
+              )}
+              <div className="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSmsModal(false);
+                    setInvitePhone("");
+                    setSmsError("");
+                  }}
+                  className="px-4 py-2 bg-gray-200 text-gray-900 rounded-lg font-semibold hover:bg-gray-300 transition"
+                  disabled={smsLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50"
+                  disabled={smsLoading || !invitePhone.trim()}
+                >
+                  {smsLoading ? "Sending..." : "Send SMS"}
                 </button>
               </div>
             </form>
